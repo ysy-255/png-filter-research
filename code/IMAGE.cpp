@@ -8,9 +8,9 @@ struct IMAGE{
 	unsigned int width;
 	unsigned int height;
 	IMAGE() = default;
-	IMAGE(unsigned int w, unsigned int h):
-		width(w),
-		height(h),
+	IMAGE(unsigned int width, unsigned int height):
+		width(width),
+		height(height),
 		R(height, std::vector<unsigned char>(width)),
 		G(height, std::vector<unsigned char>(width)),
 		B(height, std::vector<unsigned char>(width))
