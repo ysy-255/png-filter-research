@@ -68,11 +68,11 @@ void readBMP(
 		BMPimage.ImageData = IMAGE(BMPimage.biWidth, BMPimage.biHeight);
 		unsigned char extend = ((BMPimage.biWidth + 3) & ~3) - BMPimage.biWidth;
 		unsigned int address = BMPimage.bfOffBits;
-		for(int i = 0; i < BMPimage.biHeight; i++){
-			for(int j = 0; j < BMPimage.biWidth; j++){
-				BMPimage.ImageData.B[i][j] = FileData[address ++];
-				BMPimage.ImageData.G[i][j] = FileData[address ++];
-				BMPimage.ImageData.R[i][j] = FileData[address ++];
+		for(int h = BMPimage.biHeight - 1; h >= 0 ; h++){
+			for(int w = 0; w < BMPimage.biWidth; w++){
+				BMPimage.ImageData.B[h][w] = FileData[address ++];
+				BMPimage.ImageData.G[h][w] = FileData[address ++];
+				BMPimage.ImageData.R[h][w] = FileData[address ++];
 			}
 			address += extend;
 		}
@@ -106,11 +106,11 @@ void writeBMP(
 	UI_write(0, out, 0); // biYPelsPerMeter
 	UI_write(0, out, 0); // biClrUsed
 	UI_write(0, out, 0); // biClrImportant
-	for(int i = 0; i < ImageData.height; i++){
-		for(int j = 0; j < ImageData.width; j++){
-			out.put(ImageData.B[i][j]);
-			out.put(ImageData.G[i][j]);
-			out.put(ImageData.R[i][j]);
+	for(int h = ImageData.height - 1; h >= 0; h--){
+		for(int w = 0; w < ImageData.width; w++){
+			out.put(ImageData.B[h][w]);
+			out.put(ImageData.G[h][w]);
+			out.put(ImageData.R[h][w]);
 		}
 		for(int j = 0; j < extend; j++){
 			out.put(0x00);
