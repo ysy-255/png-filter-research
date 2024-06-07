@@ -1,5 +1,10 @@
+#ifndef IMAGE_H
+#define IMAGE_H
+
+
 #include <vector>
 #include <cmath>
+
 
 struct IMAGE{
 	std::vector<std::vector<unsigned char>>R;
@@ -49,3 +54,6 @@ void image2imos(IMAGE &image, IMAGE &reserve){
 	}
 	return;
 }
+
+
+#endif

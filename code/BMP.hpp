@@ -1,5 +1,10 @@
-#include "./FILE.cpp"
-#include "./IMAGE.cpp"
+#ifndef BMP_H
+#define BMP_H
+
+
+#include "./FILE.hpp"
+#include "./IMAGE.hpp"
+
 
 struct BMP{
 	// BITMAPFILEHEADER
@@ -113,3 +118,6 @@ void writeBMP(
 	}
 	return;
 }
+
+
+#endif

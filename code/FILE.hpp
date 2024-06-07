@@ -1,7 +1,12 @@
+#ifndef FILE_H
+#define FILE_H
+
+
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <cstring>
+
 
 unsigned short UV2_US(
 		const std::vector<unsigned char> & vec,
@@ -76,3 +81,6 @@ void UI_write(
 	}
 	return;
 }
+
+
+#endif
