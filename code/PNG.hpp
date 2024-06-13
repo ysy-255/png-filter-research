@@ -46,12 +46,14 @@ unsigned char PaethPredictor(unsigned char a /* left */,unsigned char b/* above 
     return c;
 }
 
-void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, const unsigned int & width, const unsigned int & height, const unsigned char & color){
+void PNGstream2img(const std::vector<unsigned char> & datastream, IMAGE & img, std::vector<unsigned char> & methods, const unsigned int & width, const unsigned int & height, const unsigned char & color){
+	methods.resize(height);
 	img = IMAGE(width, height);
 	unsigned int offset = 0;
 	unsigned char filter;
 	for(unsigned int y = 0; y < height; y++){
 		filter = datastream[offset ++];
+		methods[y] = filter;
 		switch(filter){
 			case 0:
 				for(unsigned int x = 0; x < width; x++){
@@ -63,8 +65,8 @@ void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, c
 				break;
 			case 1:
 				img.R[y][0] = datastream[offset ++];
-				img.G[y][1] = datastream[offset ++];
-				img.B[y][2] = datastream[offset ++];
+				img.G[y][0] = datastream[offset ++];
+				img.B[y][0] = datastream[offset ++];
 				if(color == 4)offset ++;
 				for(unsigned int x = 1; x < width; x++){
 					img.R[y][x] = datastream[offset ++] + img.R[y][x - 1];
@@ -94,8 +96,8 @@ void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, c
 			case 3:
 				if(y == 0){
 					img.R[y][0] = datastream[offset ++];
-					img.G[y][1] = datastream[offset ++];
-					img.B[y][2] = datastream[offset ++];
+					img.G[y][0] = datastream[offset ++];
+					img.B[y][0] = datastream[offset ++];
 					if(color == 4)offset ++;
 					for(unsigned int x = 1; x < width; x++){
 						img.R[y][x] = datastream[offset ++] + img.R[y][x - 1] / 2;
@@ -106,8 +108,8 @@ void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, c
 				}
 				else{
 					img.R[y][0] = datastream[offset ++] + img.R[y - 1][0] / 2;
-					img.G[y][1] = datastream[offset ++] + img.G[y - 1][0] / 2;
-					img.B[y][2] = datastream[offset ++] + img.B[y - 1][0] / 2;
+					img.G[y][0] = datastream[offset ++] + img.G[y - 1][0] / 2;
+					img.B[y][0] = datastream[offset ++] + img.B[y - 1][0] / 2;
 					if(color == 4)offset ++;
 					for(unsigned int x = 1; x < width; x++){
 						img.R[y][x] = datastream[offset ++] + (img.R[y][x - 1] + img.R[y - 1][x]) / 2;
@@ -120,8 +122,8 @@ void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, c
 			case 4:
 				if(y == 0){
 					img.R[y][0] = datastream[offset ++];
-					img.G[y][1] = datastream[offset ++];
-					img.B[y][2] = datastream[offset ++];
+					img.G[y][0] = datastream[offset ++];
+					img.B[y][0] = datastream[offset ++];
 					if(color == 4)offset ++;
 					for(unsigned int x = 1; x < width; x++){
 						img.R[y][x] = datastream[offset ++] + PaethPredictor(img.R[y][x - 1], 0, 0);
@@ -132,8 +134,8 @@ void PNGstream2img(IMAGE & img, const std::vector<unsigned char> & datastream, c
 				}
 				else{
 					img.R[y][0] = datastream[offset ++] + PaethPredictor(0, img.R[y - 1][0], 0);
-					img.G[y][1] = datastream[offset ++] + PaethPredictor(0, img.G[y - 1][0], 0);
-					img.B[y][2] = datastream[offset ++] + PaethPredictor(0, img.B[y - 1][0], 0);
+					img.G[y][0] = datastream[offset ++] + PaethPredictor(0, img.G[y - 1][0], 0);
+					img.B[y][0] = datastream[offset ++] + PaethPredictor(0, img.B[y - 1][0], 0);
 					if(color == 4)offset ++;
 					for(unsigned int x = 1; x < width; x++){
 						img.R[y][x] = datastream[offset ++] + PaethPredictor(img.R[y][x - 1], img.R[y - 1][0], img.R[y - 1][x - 1]);
@@ -207,7 +209,7 @@ void readPNG(
 			offset += length;
 		}
 		offset += 4;
-		std::cerr << type << length << std::endl;
+		std::cerr << type << ":" << length << ";" << std::endl;
 	} while(type != "IEND");
 
 	z_stream z;
@@ -233,7 +235,7 @@ void readPNG(
 		}
 	} while(ret != Z_STREAM_END);
 	inflateEnd(&z);
-	PNGstream2img(PNGimage.ImageData, filtered_data, PNGimage.Width, PNGimage.Height, color);
+	PNGstream2img(filtered_data, PNGimage.ImageData, PNGimage.methods, PNGimage.Width, PNGimage.Height, color);
 	return;
 }
 
