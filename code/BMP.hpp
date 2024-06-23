@@ -65,7 +65,7 @@ void readBMP(
 		BMPimage.biYPelsPerMeter = UV4_UI(FileData, 0x2A, true);
 		BMPimage.biClrUsed       = UV4_UI(FileData, 0x2E, true); if(BMPimage.biClrUsed > 0){ std::cerr << "Color Pallete is unsupported" << std::endl; return;}
 		BMPimage.biClrImportant  = UV4_UI(FileData, 0x32, true);
-		BMPimage.ImageData = IMAGE(BMPimage.biWidth, BMPimage.biHeight);
+		BMPimage.ImageData = IMAGE(BMPimage.biHeight, BMPimage.biWidth);
 		unsigned char extend = ((BMPimage.biWidth + 3) & ~3) - BMPimage.biWidth;
 		unsigned int address = BMPimage.bfOffBits;
 		for(int h = BMPimage.biHeight - 1; h >= 0 ; h++){

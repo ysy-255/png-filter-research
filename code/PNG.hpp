@@ -35,7 +35,7 @@ unsigned char PaethPredictor(unsigned char a /* left */, unsigned char b /* abov
 
 void PNGstream2img(const std::vector<unsigned char> & datastream, IMAGE & img, std::vector<unsigned char> & methods, const unsigned int & width, const unsigned int & height, const unsigned char & color){
 	methods.resize(height);
-	img = IMAGE(width, height);
+	img = IMAGE(height, width);
 	unsigned int offset = 0;
 	unsigned char filter;
 	for(unsigned int y = 0; y < height; y++){
