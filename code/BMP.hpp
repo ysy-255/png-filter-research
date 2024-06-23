@@ -68,7 +68,7 @@ void readBMP(
 		BMPimage.ImageData = IMAGE(BMPimage.biHeight, BMPimage.biWidth);
 		unsigned char extend = ((BMPimage.biWidth + 3) & ~3) - BMPimage.biWidth;
 		unsigned int address = BMPimage.bfOffBits;
-		for(int h = BMPimage.biHeight - 1; h >= 0 ; h++){
+		for(int h = BMPimage.biHeight - 1; h >= 0 ; h--){
 			for(int w = 0; w < BMPimage.biWidth; w++){
 				BMPimage.ImageData.B[h][w] = FileData[address ++];
 				BMPimage.ImageData.G[h][w] = FileData[address ++];
