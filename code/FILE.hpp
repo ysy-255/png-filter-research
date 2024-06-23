@@ -7,6 +7,11 @@
 #include <vector>
 #include <cstring>
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	const bool systemIsLittleEndian = true;
+#else
+	const bool systemIsLittleEndian = false;
+#endif
 
 unsigned short UV2_US(
 		const std::vector<unsigned char> & vec,
@@ -15,11 +20,6 @@ unsigned short UV2_US(
 	){
 	unsigned short value;
 	std::memcpy(&value, &vec[position], sizeof(unsigned short));
-	#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		const bool systemIsLittleEndian = true;
-	#else
-		const bool systemIsLittleEndian = false;
-	#endif
 	if(isLittleEndian != systemIsLittleEndian){
 		value = (value >> 8) | (value << 8);
 	}
@@ -33,11 +33,6 @@ unsigned int   UV4_UI(
 	){
 	unsigned int   value;
 	std::memcpy(&value, &vec[position], sizeof(unsigned int));
-	#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		const bool systemIsLittleEndian = true;
-	#else
-		const bool systemIsLittleEndian = false;
-	#endif
 	if(isLittleEndian != systemIsLittleEndian){
 		value = 
 		((value >> 24 ) & 0x000000FF) |
@@ -51,7 +46,8 @@ unsigned int   UV4_UI(
 void US_write(
 		const unsigned short & value,
 		std::ofstream & out,
-		const bool & isLittleEndian){
+		const bool & isLittleEndian
+	){
 	if(isLittleEndian){
 		out.put(static_cast<unsigned char>(value >> 0));
 		out.put(static_cast<unsigned char>(value >> 8));
@@ -66,7 +62,8 @@ void US_write(
 void UI_write(
 		const unsigned int   & value,
 		std::ofstream & out,
-		const bool & isLittleEndian){
+		const bool & isLittleEndian
+	){
 	if(isLittleEndian){
 		out.put(static_cast<unsigned char>(value >>  0));
 		out.put(static_cast<unsigned char>(value >>  8));

@@ -227,24 +227,24 @@ void readPNG(
 }
 
 void writePNG(
-	const IMAGE ImageData,
-	const std::string outPath,
-	std::vector<unsigned char> methods
+		const IMAGE ImageData,
+		const std::string outPath,
+		std::vector<unsigned char> methods
 	){
 	bool AdditionalFilter = false;
 	for(unsigned char & uc : methods) AdditionalFilter |= (uc > 4);
 	std::ofstream out(outPath, std::ios::binary);
 	out << (unsigned char)137 << (unsigned char)80 << (unsigned char)78 << (unsigned char)71
-	    << (unsigned char) 13 << (unsigned char)10 << (unsigned char)26 << (unsigned char)10;
-	UI_write(13, out, false);
+	    << (unsigned char) 13 << (unsigned char)10 << (unsigned char)26 << (unsigned char)10; // シグネチャ
+	UI_write(13, out, false); // IHDRの長さ(固定)
 	out << "IHDR";
 	UI_write(ImageData.width, out, false);
 	UI_write(ImageData.height, out, false);
-	out << (unsigned char)8;
-	out << (unsigned char)2;
-	out << (unsigned char)0;
+	out << (unsigned char)8; // Bit_depth
+	out << (unsigned char)2; // Color_type
+	out << (unsigned char)0; // Compression_method
 	out << (unsigned char)AdditionalFilter; // Filter Method の研究のため他と区別
-	out << (unsigned char)0;
+	out << (unsigned char)0; // Interlace_method
 	UI_write(0, out, false); // CRC分からん
 
 	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
@@ -287,7 +287,7 @@ void writePNG(
 	out << "IDAT";
 	out.write(reinterpret_cast<char *>(compressed_data.data()), compressed_size);
 	UI_write(0, out, false); // CRC分からん
-	UI_write(0, out, false);
+	UI_write(0, out, false); // IENDの長さ(固定)
 	out << "IEND";
 	UI_write(0, out, false); // CRC分からん
 	return;

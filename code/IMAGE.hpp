@@ -58,7 +58,12 @@ void imos2image(IMAGE & image){
 
 #define NEAREST_NEIGHBOR 0
 
-IMAGE image_enlarge(IMAGE & image, float scaleY, float scaleX, unsigned char type){
+IMAGE image_enlarge(
+		IMAGE & image,
+		float scaleY,
+		float scaleX,
+		unsigned char type // この関数の直前にdefineしたもの
+	){
 	if(image.height * scaleY > 65535 || image.height * scaleY > 65535){
 		char c;
 		std::cerr << "too big image size!\ncontinue?[Y/n]";
