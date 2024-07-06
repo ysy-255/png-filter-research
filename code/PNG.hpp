@@ -227,29 +227,54 @@ void readPNG(
 }
 
 void writePNG(
-		const IMAGE ImageData,
-		const std::string outPath,
-		std::vector<unsigned char> methods
+		const IMAGE & ImageData,
+		const std::string & outPath,
+		std::vector<unsigned char> & methods
 	){
+	#define CRC32_V(crc, vec) crc32_z(crc, reinterpret_cast<const Bytef*>(vec.data()), vec.size())
+	#define CRC32_S(crc, str) crc32_z(crc, reinterpret_cast<const Bytef*>(str), strlen(str))
+	#define WRITE_V(out, vec) out.write(reinterpret_cast<char*>(vec.data()), vec.size())
+	unsigned int crc;
+	unsigned int offset;
+	std::ofstream out(outPath, std::ios::binary);
+
+
+	out << (unsigned char)0x89 << 'P' << 'N' << 'G' << '\r' << '\n' << (unsigned char)0x1A << '\n'; // シグネチャ
+
+
+	// IHDRここから
+
+	std::vector<unsigned char> IHDR(13);
 	bool AdditionalFilter = false;
 	for(unsigned char & uc : methods) AdditionalFilter |= (uc > 4);
-	std::ofstream out(outPath, std::ios::binary);
-	out << (unsigned char)137 << (unsigned char)80 << (unsigned char)78 << (unsigned char)71
-	    << (unsigned char) 13 << (unsigned char)10 << (unsigned char)26 << (unsigned char)10; // シグネチャ
-	UI_write(13, out, false); // IHDRの長さ(固定)
-	out << "IHDR";
-	UI_write(ImageData.width, out, false);
-	UI_write(ImageData.height, out, false);
-	out << (unsigned char)8; // Bit_depth
-	out << (unsigned char)2; // Color_type
-	out << (unsigned char)0; // Compression_method
-	out << (unsigned char)AdditionalFilter; // Filter Method の研究のため他と区別
-	out << (unsigned char)0; // Interlace_method
-	UI_write(0, out, false); // CRC分からん
+	offset = 0;
+	UI_write_UV(ImageData.width, IHDR, offset , false);
+	UI_write_UV(ImageData.height, IHDR, offset , false);
+	IHDR[offset ++] = 8; // Bit_depth
+	IHDR[offset ++] = 2; // Color_type
+	IHDR[offset ++] = 0; // Compression_method
+	IHDR[offset ++] = AdditionalFilter; // Filter Method の研究のため他と区別
+	IHDR[offset ++] = 0; // Interlace_method
+
+	UI_write(13, out, false); // LENGTH
+
+	out << "IHDR"; // TYPE
+
+	WRITE_V(out, IHDR); // DATA
+
+	crc = crc32(0L, Z_NULL, 0);
+	crc = CRC32_S(crc, "IHDR");
+	crc = CRC32_V(crc, IHDR);
+	UI_write(crc, out, false); // CRC
+
+	// IHDRここまで
+
+
+	// IDATここから
 
 	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
-	std::vector<unsigned char> compressed_data((ImageData.width * 3 + 1) * ImageData.height);
-	int offset = 0;
+	std::vector<unsigned char> compressed_data((ImageData.width * 3 + 1) * ImageData.height + 0x1000);
+	offset = 0;
 	for(int h = 0; h < ImageData.height; h++){
 		datastream[offset ++] = methods[h];
 		for(int w = 0; w < ImageData.width; w++){
@@ -262,7 +287,7 @@ void writePNG(
 	z.zalloc = Z_NULL;
 	z.zfree = Z_NULL;
 	z.opaque = Z_NULL;
-	if(deflateInit(&z, Z_DEFAULT_COMPRESSION) != Z_OK){
+	if(deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 /*32768*/, 8, Z_FILTERED) != Z_OK){
 		std::cerr << "z_streamの初期化に失敗" << std::endl;
 		return;
 	}
@@ -283,13 +308,32 @@ void writePNG(
 	deflateEnd(&z);
 	size_t compressed_size = z.total_out;
 	compressed_data.resize(compressed_size);
-	UI_write(compressed_size, out, false);
-	out << "IDAT";
-	out.write(reinterpret_cast<char *>(compressed_data.data()), compressed_size);
-	UI_write(0, out, false); // CRC分からん
-	UI_write(0, out, false); // IENDの長さ(固定)
-	out << "IEND";
-	UI_write(0, out, false); // CRC分からん
+
+	UI_write(compressed_size, out, false); // LENGTH
+
+	out << "IDAT"; // TYPE
+
+	WRITE_V(out, compressed_data); // DATA
+
+	crc = crc32(0L, Z_NULL, 0);
+	crc = CRC32_S(crc, "IDAT");
+	crc = CRC32_V(crc, compressed_data);
+	UI_write(crc, out, false); // CRC
+
+	// IDATここまで
+
+
+	// IENDここから
+
+	UI_write(0, out, false); // LENGTH
+	out << "IEND"; // TYPE
+	/* NO DATA */
+	crc = crc32(0L, Z_NULL, 0);
+	crc = CRC32_S(crc, "IEND");
+	UI_write(crc, out, false); // CRC
+
+	// IENDここまで
+
 	return;
 }
 

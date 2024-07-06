@@ -12,8 +12,6 @@ int main(){
 	readBMP("../test images/しぐたん.bmp", BMPimage1);
 	std::vector<unsigned char> methods(BMPimage1.ImageData.height, 0 /*すべてNoneでフィルターされたものとする*/);
 
-	// CRCの実装ができていないので規格にそったPNGは出力できません。
-	// 画像データは出力しているで表示できる場合もあります
 	writePNG(BMPimage1.ImageData, "../out/bmp2png.png", methods);
 
 

@@ -79,5 +79,43 @@ void UI_write(
 	return;
 }
 
+void US_write_UV(
+		const unsigned short & value,
+		std::vector<unsigned char> & vec,
+		unsigned int & offset,
+		const bool & isLittleEndian
+	){
+	if(isLittleEndian){
+		vec[offset ++] = static_cast<unsigned char>(value >> 0);
+		vec[offset ++] = static_cast<unsigned char>(value >> 8);
+	}
+	else{
+		vec[offset ++] = static_cast<unsigned char>(value >> 8);
+		vec[offset ++] = static_cast<unsigned char>(value >> 0);
+	}
+	return;
+}
+
+void UI_write_UV(
+		const unsigned int   & value,
+		std::vector<unsigned char> & vec,
+		unsigned int & offset,
+		const bool & isLittleEndian
+	){
+	if(isLittleEndian){
+		vec[offset ++] = static_cast<unsigned char>(value >>  0);
+		vec[offset ++] = static_cast<unsigned char>(value >>  8);
+		vec[offset ++] = static_cast<unsigned char>(value >> 16);
+		vec[offset ++] = static_cast<unsigned char>(value >> 24);
+	}
+	else{
+		vec[offset ++] = static_cast<unsigned char>(value >> 24);
+		vec[offset ++] = static_cast<unsigned char>(value >> 16);
+		vec[offset ++] = static_cast<unsigned char>(value >>  8);
+		vec[offset ++] = static_cast<unsigned char>(value >>  0);
+	}
+	return;
+}
+
 
 #endif
