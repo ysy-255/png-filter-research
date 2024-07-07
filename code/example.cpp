@@ -10,9 +10,7 @@ int main(){
 	
 	BMP BMPimage1;
 	readBMP("../test images/しぐたん.bmp", BMPimage1);
-	std::vector<unsigned char> methods(BMPimage1.ImageData.height, 0 /*すべてNoneでフィルターされたものとする*/);
-
-	writePNG(BMPimage1.ImageData, "../out/bmp2png.png", methods);
+	writePNG(BMPimage1.ImageData, "../out/bmp2png.png");
 
 
 	IMAGE image1 = PNGimage1.ImageData;

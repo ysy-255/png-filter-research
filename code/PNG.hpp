@@ -33,7 +33,13 @@ unsigned char PaethPredictor(unsigned char a /* left */, unsigned char b /* abov
 	return c;
 }
 
-void PNGstream2img(const std::vector<unsigned char> & datastream, IMAGE & img, std::vector<unsigned char> & methods, const unsigned int & width, const unsigned int & height, const unsigned char & color){
+void PNGstream2img(
+		const std::vector<unsigned char> & datastream,
+		IMAGE & img, std::vector<unsigned char> & methods,
+		const unsigned int & width,
+		const unsigned int & height,
+		const unsigned char & color
+	){
 	methods.resize(height);
 	img = IMAGE(height, width);
 	unsigned int offset = 0;
@@ -226,10 +232,12 @@ void readPNG(
 	return;
 }
 
-void writePNG(
-		const IMAGE & ImageData,
+void writePNG_datastream(
+		const unsigned int width,
+		const unsigned int height,
+		std::vector<unsigned char> & datastream,
 		const std::string & outPath,
-		std::vector<unsigned char> & methods
+		const bool AdditionalFilter
 	){
 	#define CRC32_V(crc, vec) crc32_z(crc, reinterpret_cast<const Bytef*>(vec.data()), vec.size())
 	#define CRC32_S(crc, str) crc32_z(crc, reinterpret_cast<const Bytef*>(str), strlen(str))
@@ -245,11 +253,9 @@ void writePNG(
 	// IHDRここから
 
 	std::vector<unsigned char> IHDR(13);
-	bool AdditionalFilter = false;
-	for(unsigned char & uc : methods) AdditionalFilter |= (uc > 4);
 	offset = 0;
-	UI_write_UV(ImageData.width, IHDR, offset , false);
-	UI_write_UV(ImageData.height, IHDR, offset , false);
+	UI_write_UV(width, IHDR, offset , false);
+	UI_write_UV(height, IHDR, offset , false);
 	IHDR[offset ++] = 8; // Bit_depth
 	IHDR[offset ++] = 2; // Color_type
 	IHDR[offset ++] = 0; // Compression_method
@@ -272,17 +278,7 @@ void writePNG(
 
 	// IDATここから
 
-	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
-	std::vector<unsigned char> compressed_data((ImageData.width * 3 + 1) * ImageData.height + 0x1000);
-	offset = 0;
-	for(int h = 0; h < ImageData.height; h++){
-		datastream[offset ++] = methods[h];
-		for(int w = 0; w < ImageData.width; w++){
-			datastream[offset ++] = ImageData.R[h][w];
-			datastream[offset ++] = ImageData.G[h][w];
-			datastream[offset ++] = ImageData.B[h][w];
-		}
-	}
+	std::vector<unsigned char> compressed_data((width * 3 + 1) * height + 0x1000);
 	z_stream z;
 	z.zalloc = Z_NULL;
 	z.zfree = Z_NULL;
@@ -334,6 +330,45 @@ void writePNG(
 
 	// IENDここまで
 
+	return;
+}
+
+void writePNG(
+		const IMAGE & ImageData,
+		const std::string & outPath,
+		const std::vector<unsigned char> & methods
+	){
+	bool AdditionalFilter = false;
+	for(const unsigned char & uc : methods) AdditionalFilter |= (uc > 4);
+	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
+	unsigned int offset = 0;
+	for(int h = 0; h < ImageData.height; h++){
+		datastream[offset ++] = methods[h];
+		for(int w = 0; w < ImageData.width; w++){
+			datastream[offset ++] = ImageData.R[h][w];
+			datastream[offset ++] = ImageData.G[h][w];
+			datastream[offset ++] = ImageData.B[h][w];
+		}
+	}
+	writePNG_datastream(ImageData.width, ImageData.height, datastream, outPath, AdditionalFilter);
+	return;
+}
+
+void writePNG(
+		const IMAGE & ImageData,
+		const std::string & outPath
+	){
+	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
+	unsigned int offset = 0;
+	for(int h = 0; h < ImageData.height; h++){
+		datastream[offset ++] = 0;
+		for(int w = 0; w < ImageData.width; w++){
+			datastream[offset ++] = ImageData.R[h][w];
+			datastream[offset ++] = ImageData.G[h][w];
+			datastream[offset ++] = ImageData.B[h][w];
+		}
+	}
+	writePNG_datastream(ImageData.width, ImageData.height, datastream, outPath, false);
 	return;
 }
 
