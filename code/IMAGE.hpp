@@ -64,11 +64,7 @@ IMAGE image_enlarge(
 		float scaleX,
 		unsigned char type // この関数の直前にdefineしたもの
 	){
-	if(image.height * scaleY > 65535 || image.height * scaleY > 65535){
-		char c;
-		std::cerr << "too big image size!\ncontinue?[Y/n]";
-		if(c != 'y' && c != 'Y')return {};
-	}
+	if(image.height * scaleY > 65535 || image.height * scaleY > 65535) return {};
 	IMAGE result(static_cast<int>(image.height * scaleY), static_cast<int>(image.width * scaleX));
 	switch(type){
 		case NEAREST_NEIGHBOR:{
