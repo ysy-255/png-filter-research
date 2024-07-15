@@ -14,12 +14,12 @@ int main(){
 
 	PNG image1 = PNGimage1;
 	filterer(image1, true);
-	writePNG(image1.ImageData, "../out/filter.png", image1.methods);
-	writePNG(image1.ImageData, "../out/filter_raw.png"); // filtered, but no methods data
+	writePNG(image1.ImageData, "../out/filtered.png", image1.methods);
+	writePNG(image1.ImageData, "../out/filtered_raw.png"); // filtered, but no methods data
 
 	image1 = PNGimage1;
 	std::vector<unsigned char> datastream = filterer(image1, false);
-	writePNG_datastream(image1.Width, image1.Height, datastream, "../out/faster.png", false); // faster than writePNG
+	writePNG_datastream(image1.Width, image1.Height, datastream, "../out/filtered_faster.png", false); // faster than writePNG
 
 
 	IMAGE image2 = PNGimage1.ImageData;
