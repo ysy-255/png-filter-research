@@ -465,12 +465,15 @@ std::vector<unsigned char> filterer(PNG & data, bool change){
 	for(unsigned int h = 0; h < data.Height; h++){
 		std::memcpy(datastream.data() + streamWidth * h, chooser(data.ImageData, h).data(), streamWidth);
 		data.methods[h] = datastream[streamWidth * h];
-		if(change){
-			unsigned int offset = streamWidth * h;
+	}
+	if(change){
+		unsigned int offset = 0;
+		for(unsigned int h = 0; h < data.Height; h++){
+			++offset;
 			for(unsigned int w = 0; w < data.Width; w++){
-				data.ImageData.R[h][w] = datastream[++ offset];
-				data.ImageData.G[h][w] = datastream[++ offset];
-				data.ImageData.B[h][w] = datastream[++ offset];
+				data.ImageData.R[h][w] = datastream[offset ++];
+				data.ImageData.G[h][w] = datastream[offset ++];
+				data.ImageData.B[h][w] = datastream[offset ++];
 			}
 		}
 	}
