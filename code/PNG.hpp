@@ -372,4 +372,109 @@ void writePNG(
 	return;
 }
 
+unsigned long long ratePredictor(std::vector<unsigned char> & vec){
+	unsigned long long result = 0;
+	for(unsigned int i = 0; i < vec.size(); i++){
+		if(vec[i] == 0){
+			result += 32;
+		}
+		else{
+			result += __builtin_clz(std::min(vec[i], (unsigned char)(256 - vec[i])));
+		}
+	}
+	return result;
+}
+
+int signedVec(const std::vector<std::vector<unsigned char>> & vec, const int & row, const int & col){
+	return row < 0 || col < 0 ? 0 : vec[row][col];
+}
+
+std::vector<unsigned char> chooser(const IMAGE & data, const int row){
+	std::vector<std::vector<unsigned char>>results(5, std::vector<unsigned char>(data.width * 3 + 1));
+	unsigned long long predictedRate[5];
+	for(unsigned char FilterType = 0; FilterType < 5; FilterType ++){
+		switch(FilterType){
+			case 0:{
+				results[0][0] = 0;
+				unsigned int offset = 0;
+				for(int w = 0; w < data.width; w++){
+					results[0][++ offset] = data.R[row][w];
+					results[0][++ offset] = data.G[row][w];
+					results[0][++ offset] = data.B[row][w];
+				}
+				break;
+			}
+			case 1:{
+				results[1][0] = 1;
+				unsigned int offset = 0;
+				for(int w = 0; w < data.width; w++){
+					results[1][++ offset] = data.R[row][w] - signedVec(data.R, row, w - 1);
+					results[1][++ offset] = data.G[row][w] - signedVec(data.G, row, w - 1);
+					results[1][++ offset] = data.B[row][w] - signedVec(data.B, row, w - 1);
+				}
+				break;
+			}
+			case 2:{
+				results[2][0] = 2;
+				unsigned int offset = 0;
+				for(int w = 0; w < data.width; w++){
+					results[2][++ offset] = data.R[row][w] - signedVec(data.R, row - 1, w);
+					results[2][++ offset] = data.G[row][w] - signedVec(data.G, row - 1, w);
+					results[2][++ offset] = data.B[row][w] - signedVec(data.B, row - 1, w);
+				}
+				break;
+			}
+			case 3:{
+				results[3][0] = 3;
+				unsigned int offset = 0;
+				for(int w = 0; w < data.width; w++){
+					results[3][++ offset] = data.R[row][w] - (signedVec(data.R, row, w - 1) + signedVec(data.R, row - 1, w)) / 2;
+					results[3][++ offset] = data.G[row][w] - (signedVec(data.G, row, w - 1) + signedVec(data.G, row - 1, w)) / 2;
+					results[3][++ offset] = data.B[row][w] - (signedVec(data.B, row, w - 1) + signedVec(data.B, row - 1, w)) / 2;
+				}
+				break;
+			}
+			case 4:{
+				results[4][0] = 4;
+				unsigned int offset = 0;
+				for(int w = 0; w < data.width; w++){
+					results[4][++ offset] = data.R[row][w] - PaethPredictor(signedVec(data.R, row, w - 1), signedVec(data.R, row - 1, w), signedVec(data.R, row - 1, w - 1));
+					results[4][++ offset] = data.G[row][w] - PaethPredictor(signedVec(data.G, row, w - 1), signedVec(data.G, row - 1, w), signedVec(data.G, row - 1, w - 1));
+					results[4][++ offset] = data.B[row][w] - PaethPredictor(signedVec(data.B, row, w - 1), signedVec(data.B, row - 1, w), signedVec(data.B, row - 1, w - 1));
+				}
+				break;
+			}
+		}
+	}
+	unsigned long long max_value = 0;
+	unsigned char max_element = 0;
+	for(int i = 0; i < 5; i++){
+		predictedRate[i] = ratePredictor(results[i]);
+		// std::cout << i << ": " << predictedRate[i] << ", ";
+		if(predictedRate[i] > max_value){
+			max_value = predictedRate[i];
+			max_element = i;
+		}
+	}
+	return results[max_element];
+}
+
+std::vector<unsigned char> filterer(PNG & data, bool change){
+	unsigned int streamWidth = data.Width * 3 + 1;
+	std::vector<unsigned char> datastream(streamWidth * data.Height);
+	for(unsigned int h = 0; h < data.Height; h++){
+		std::memcpy(datastream.data() + streamWidth * h, chooser(data.ImageData, h).data(), streamWidth);
+		data.methods[h] = datastream[streamWidth * h];
+		if(change){
+			unsigned int offset = streamWidth * h;
+			for(unsigned int w = 0; w < data.Width; w++){
+				data.ImageData.R[h][w] = datastream[++ offset];
+				data.ImageData.G[h][w] = datastream[++ offset];
+				data.ImageData.B[h][w] = datastream[++ offset];
+			}
+		}
+	}
+	return datastream;
+}
+
 #endif
