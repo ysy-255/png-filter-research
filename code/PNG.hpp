@@ -44,97 +44,97 @@ void PNGstream2img(
 	img = IMAGE(height, width);
 	unsigned int offset = 0;
 	unsigned char filter;
-	for(unsigned int y = 0; y < height; y++){
-		filter = datastream[offset ++];
+	for(unsigned int y = 0; y < height; ++y, ++offset){
+		filter = datastream[offset];
 		methods[y] = filter;
 		switch(filter){
 			case 0:
-				for(unsigned int x = 0; x < width; x++){
-					img.R[y][x] = datastream[offset ++];
-					img.G[y][x] = datastream[offset ++];
-					img.B[y][x] = datastream[offset ++];
-					if(color == 4)offset ++;
+				for(unsigned int x = 0; x < width; ++x){
+					img.R[y][x] = datastream[++offset];
+					img.G[y][x] = datastream[++offset];
+					img.B[y][x] = datastream[++offset];
+					if(color == 4)++offset;
 				}
 				break;
 			case 1:
-				img.R[y][0] = datastream[offset ++];
-				img.G[y][0] = datastream[offset ++];
-				img.B[y][0] = datastream[offset ++];
-				if(color == 4)offset ++;
-				for(unsigned int x = 1; x < width; x++){
-					img.R[y][x] = datastream[offset ++] + img.R[y][x - 1];
-					img.G[y][x] = datastream[offset ++] + img.G[y][x - 1];
-					img.B[y][x] = datastream[offset ++] + img.B[y][x - 1];
-					if(color == 4)offset ++;
+				img.R[y][0] = datastream[++offset];
+				img.G[y][0] = datastream[++offset];
+				img.B[y][0] = datastream[++offset];
+				if(color == 4)++offset;
+				for(unsigned int x = 1; x < width; ++x){
+					img.R[y][x] = datastream[++offset] + img.R[y][x - 1];
+					img.G[y][x] = datastream[++offset] + img.G[y][x - 1];
+					img.B[y][x] = datastream[++offset] + img.B[y][x - 1];
+					if(color == 4)++offset;
 				}
 				break;
 			case 2:
 				if(y == 0){
-					for(unsigned int x = 0; x < width; x++){
-						img.R[0][x] = datastream[offset ++];
-						img.G[0][x] = datastream[offset ++];
-						img.B[0][x] = datastream[offset ++];
-						if(color == 4)offset ++;
+					for(unsigned int x = 0; x < width; ++x){
+						img.R[0][x] = datastream[++offset];
+						img.G[0][x] = datastream[++offset];
+						img.B[0][x] = datastream[++offset];
+						if(color == 4)++offset;
 					}
 				}
 				else{
-					for(unsigned int x = 0; x < width; x++){
-						img.R[y][x] = datastream[offset ++] + img.R[y - 1][x];
-						img.G[y][x] = datastream[offset ++] + img.G[y - 1][x];
-						img.B[y][x] = datastream[offset ++] + img.B[y - 1][x];
-						if(color == 4)offset ++;
+					for(unsigned int x = 0; x < width; ++x){
+						img.R[y][x] = datastream[++offset] + img.R[y - 1][x];
+						img.G[y][x] = datastream[++offset] + img.G[y - 1][x];
+						img.B[y][x] = datastream[++offset] + img.B[y - 1][x];
+						if(color == 4)++offset;
 					}
 				}
 				break;
 			case 3:
 				if(y == 0){
-					img.R[0][0] = datastream[offset ++];
-					img.G[0][0] = datastream[offset ++];
-					img.B[0][0] = datastream[offset ++];
-					if(color == 4)offset ++;
-					for(unsigned int x = 1; x < width; x++){
-						img.R[0][x] = datastream[offset ++] + img.R[0][x - 1] / 2;
-						img.G[0][x] = datastream[offset ++] + img.G[0][x - 1] / 2;
-						img.B[0][x] = datastream[offset ++] + img.B[0][x - 1] / 2;
-						if(color == 4)offset ++;
+					img.R[0][0] = datastream[++offset];
+					img.G[0][0] = datastream[++offset];
+					img.B[0][0] = datastream[++offset];
+					if(color == 4)++offset;
+					for(unsigned int x = 1; x < width; ++x){
+						img.R[0][x] = datastream[++offset] + img.R[0][x - 1] / 2;
+						img.G[0][x] = datastream[++offset] + img.G[0][x - 1] / 2;
+						img.B[0][x] = datastream[++offset] + img.B[0][x - 1] / 2;
+						if(color == 4)++offset;
 					}
 				}
 				else{
-					img.R[y][0] = datastream[offset ++] + img.R[y - 1][0] / 2;
-					img.G[y][0] = datastream[offset ++] + img.G[y - 1][0] / 2;
-					img.B[y][0] = datastream[offset ++] + img.B[y - 1][0] / 2;
-					if(color == 4)offset ++;
-					for(unsigned int x = 1; x < width; x++){
-						img.R[y][x] = datastream[offset ++] + (img.R[y][x - 1] + img.R[y - 1][x]) / 2;
-						img.G[y][x] = datastream[offset ++] + (img.G[y][x - 1] + img.G[y - 1][x]) / 2;
-						img.B[y][x] = datastream[offset ++] + (img.B[y][x - 1] + img.B[y - 1][x]) / 2;
-						if(color == 4)offset ++;
+					img.R[y][0] = datastream[++offset] + img.R[y - 1][0] / 2;
+					img.G[y][0] = datastream[++offset] + img.G[y - 1][0] / 2;
+					img.B[y][0] = datastream[++offset] + img.B[y - 1][0] / 2;
+					if(color == 4)++offset;
+					for(unsigned int x = 1; x < width; ++x){
+						img.R[y][x] = datastream[++offset] + (img.R[y][x - 1] + img.R[y - 1][x]) / 2;
+						img.G[y][x] = datastream[++offset] + (img.G[y][x - 1] + img.G[y - 1][x]) / 2;
+						img.B[y][x] = datastream[++offset] + (img.B[y][x - 1] + img.B[y - 1][x]) / 2;
+						if(color == 4)++offset;
 					}
 				}
 				break;
 			case 4:
 				if(y == 0){
-					img.R[0][0] = datastream[offset ++];
-					img.G[0][0] = datastream[offset ++];
-					img.B[0][0] = datastream[offset ++];
-					if(color == 4)offset ++;
-					for(unsigned int x = 1; x < width; x++){
-						img.R[0][x] = datastream[offset ++] + PaethPredictor(img.R[0][x - 1], 0, 0);
-						img.G[0][x] = datastream[offset ++] + PaethPredictor(img.G[0][x - 1], 0, 0);
-						img.B[0][x] = datastream[offset ++] + PaethPredictor(img.B[0][x - 1], 0, 0);
-						if(color == 4)offset ++;
+					img.R[0][0] = datastream[++offset];
+					img.G[0][0] = datastream[++offset];
+					img.B[0][0] = datastream[++offset];
+					if(color == 4)++offset;
+					for(unsigned int x = 1; x < width; ++x){
+						img.R[0][x] = datastream[++offset] + PaethPredictor(img.R[0][x - 1], 0, 0);
+						img.G[0][x] = datastream[++offset] + PaethPredictor(img.G[0][x - 1], 0, 0);
+						img.B[0][x] = datastream[++offset] + PaethPredictor(img.B[0][x - 1], 0, 0);
+						if(color == 4)++offset;
 					}
 				}
 				else{
-					img.R[y][0] = datastream[offset ++] + PaethPredictor(0, img.R[y - 1][0], 0);
-					img.G[y][0] = datastream[offset ++] + PaethPredictor(0, img.G[y - 1][0], 0);
-					img.B[y][0] = datastream[offset ++] + PaethPredictor(0, img.B[y - 1][0], 0);
-					if(color == 4)offset ++;
-					for(unsigned int x = 1; x < width; x++){
-						img.R[y][x] = datastream[offset ++] + PaethPredictor(img.R[y][x - 1], img.R[y - 1][x], img.R[y - 1][x - 1]);
-						img.G[y][x] = datastream[offset ++] + PaethPredictor(img.G[y][x - 1], img.G[y - 1][x], img.G[y - 1][x - 1]);
-						img.B[y][x] = datastream[offset ++] + PaethPredictor(img.B[y][x - 1], img.B[y - 1][x], img.B[y - 1][x - 1]);
-						if(color == 4)offset ++;
+					img.R[y][0] = datastream[++offset] + PaethPredictor(0, img.R[y - 1][0], 0);
+					img.G[y][0] = datastream[++offset] + PaethPredictor(0, img.G[y - 1][0], 0);
+					img.B[y][0] = datastream[++offset] + PaethPredictor(0, img.B[y - 1][0], 0);
+					if(color == 4)++offset;
+					for(unsigned int x = 1; x < width; ++x){
+						img.R[y][x] = datastream[++offset] + PaethPredictor(img.R[y][x - 1], img.R[y - 1][x], img.R[y - 1][x - 1]);
+						img.G[y][x] = datastream[++offset] + PaethPredictor(img.G[y][x - 1], img.G[y - 1][x], img.G[y - 1][x - 1]);
+						img.B[y][x] = datastream[++offset] + PaethPredictor(img.B[y][x - 1], img.B[y - 1][x], img.B[y - 1][x - 1]);
+						if(color == 4)++offset;
 					}
 				}
 
@@ -342,12 +342,12 @@ void writePNG(
 	for(const unsigned char & uc : methods) AdditionalFilter |= (uc > 4);
 	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
 	unsigned int offset = 0;
-	for(int h = 0; h < ImageData.height; h++){
-		datastream[offset ++] = methods[h];
-		for(int w = 0; w < ImageData.width; w++){
-			datastream[offset ++] = ImageData.R[h][w];
-			datastream[offset ++] = ImageData.G[h][w];
-			datastream[offset ++] = ImageData.B[h][w];
+	for(int h = 0; h < ImageData.height; ++h, ++offset){
+		datastream[offset] = methods[h];
+		for(int w = 0; w < ImageData.width; ++w){
+			datastream[++ offset] = ImageData.R[h][w];
+			datastream[++ offset] = ImageData.G[h][w];
+			datastream[++ offset] = ImageData.B[h][w];
 		}
 	}
 	writePNG_datastream(ImageData.width, ImageData.height, datastream, outPath, AdditionalFilter);
@@ -360,12 +360,12 @@ void writePNG(
 	){
 	std::vector<unsigned char> datastream((ImageData.width * 3 + 1) * ImageData.height);
 	unsigned int offset = 0;
-	for(int h = 0; h < ImageData.height; h++){
-		datastream[offset ++] = 0;
-		for(int w = 0; w < ImageData.width; w++){
-			datastream[offset ++] = ImageData.R[h][w];
-			datastream[offset ++] = ImageData.G[h][w];
-			datastream[offset ++] = ImageData.B[h][w];
+	for(int h = 0; h < ImageData.height; ++h, ++offset){
+		datastream[offset] = 0;
+		for(int w = 0; w < ImageData.width; ++w){
+			datastream[++ offset] = ImageData.R[h][w];
+			datastream[++ offset] = ImageData.G[h][w];
+			datastream[++ offset] = ImageData.B[h][w];
 		}
 	}
 	writePNG_datastream(ImageData.width, ImageData.height, datastream, outPath, false);
@@ -403,7 +403,7 @@ std::vector<unsigned char> chooser(const IMAGE & data, const int h){
 		results[3].begin(),
 		results[4].begin()
 	};
-	for(int w = 0; w < data.width; w++){
+	for(int w = 0; w < data.width; ++w){
 		R.now = data.R[h][w]; R.up = h > 0 ? data.R[h - 1][w] : 0;
 		G.now = data.G[h][w]; G.up = h > 0 ? data.G[h - 1][w] : 0;
 		B.now = data.B[h][w]; B.up = h > 0 ? data.B[h - 1][w] : 0;
@@ -445,18 +445,17 @@ std::vector<unsigned char> chooser(const IMAGE & data, const int h){
 std::vector<unsigned char> filterer(PNG & data, bool change){
 	unsigned int streamWidth = data.Width * 3 + 1;
 	std::vector<unsigned char> datastream(streamWidth * data.Height);
-	for(unsigned int h = 0; h < data.Height; h++){
+	for(unsigned int h = 0; h < data.Height; ++h){
 		std::memcpy(datastream.data() + streamWidth * h, chooser(data.ImageData, h).data(), streamWidth);
 		data.methods[h] = datastream[streamWidth * h];
 	}
 	if(change){
 		unsigned int offset = 0;
-		for(unsigned int h = 0; h < data.Height; h++){
-			++offset;
+		for(unsigned int h = 0; h < data.Height; ++h, ++offset){
 			for(unsigned int w = 0; w < data.Width; w++){
-				data.ImageData.R[h][w] = datastream[offset ++];
-				data.ImageData.G[h][w] = datastream[offset ++];
-				data.ImageData.B[h][w] = datastream[offset ++];
+				data.ImageData.R[h][w] = datastream[++ offset];
+				data.ImageData.G[h][w] = datastream[++ offset];
+				data.ImageData.B[h][w] = datastream[++ offset];
 			}
 		}
 	}
