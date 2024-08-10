@@ -375,7 +375,7 @@ void writePNG(
 unsigned long long ratePredictor(std::vector<unsigned char> & line){
 	unsigned long long result = 0;
 	for(unsigned int w = 0, width = line.size(); w < width; ++w){
-		result += std::min(line[w], (unsigned char)(256 - line[w]));
+		result += std::abs((signed char)line[w]);
 	}
 	return result;
 }
