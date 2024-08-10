@@ -372,15 +372,10 @@ void writePNG(
 	return;
 }
 
-unsigned long long ratePredictor(std::vector<unsigned char> & vec){
+unsigned long long ratePredictor(std::vector<unsigned char> & line){
 	unsigned long long result = 0;
-	for(unsigned int i = 0; i < vec.size(); i++){
-		if(vec[i] == 0){
-			result += 32;
-		}
-		else{
-			result += __builtin_clz(std::min(vec[i], (unsigned char)(256 - vec[i])));
-		}
+	for(unsigned int w = 0, width = line.size(); w < width; ++w){
+		result += std::min(line[w], (unsigned char)(256 - line[w]));
 	}
 	return result;
 }
@@ -427,18 +422,21 @@ std::vector<unsigned char> chooser(const IMAGE & data, const int h){
 		B.upleft = B.up; B.left = B.now;
 	}
 
-	unsigned long long max_value = 0;
-	unsigned char max_element = 0;
+	unsigned long long min_value = 0;
+	unsigned char min_element = 0;
 	unsigned long long predictedRate[5];
-	for(int Type = 0; Type < 5; Type++){
+	for(int Type = 0; Type < 5; ++Type){
 		predictedRate[Type] = ratePredictor(results[Type]);
-		// std::cout << i << ": " << predictedRate[i] << ", ";
-		if(predictedRate[Type] > max_value){
-			max_value = predictedRate[Type];
-			max_element = Type;
+		// std::cout << Type << ": " << predictedRate[Type] << ", ";
+
+	}
+	for(int Type = 1, min_value = predictedRate[0]; Type < 5; ++ Type){
+		if(predictedRate[Type] < min_value){
+			min_value = predictedRate[Type];
+			min_element = Type;
 		}
 	}
-	return results[max_element];
+	return results[min_element];
 }
 
 // フィルター後の datastreamの出力、methodsの更新、(元データ自体の更新)
