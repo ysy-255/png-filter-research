@@ -385,80 +385,63 @@ unsigned long long ratePredictor(std::vector<unsigned char> & vec){
 	return result;
 }
 
-int signedVec(const std::vector<std::vector<unsigned char>> & vec, const int & row, const int & col){
-	return row < 0 || col < 0 ? 0 : vec[row][col];
-}
-
-std::vector<unsigned char> chooser(const IMAGE & data, const int row){
-	std::vector<std::vector<unsigned char>>results(5, std::vector<unsigned char>(data.width * 3 + 1));
-	unsigned long long predictedRate[5];
-	for(unsigned char FilterType = 0; FilterType < 5; FilterType ++){
-		switch(FilterType){
-			case 0:{
-				results[0][0] = 0;
-				unsigned int offset = 0;
-				for(int w = 0; w < data.width; w++){
-					results[0][++ offset] = data.R[row][w];
-					results[0][++ offset] = data.G[row][w];
-					results[0][++ offset] = data.B[row][w];
-				}
-				break;
-			}
-			case 1:{
-				results[1][0] = 1;
-				unsigned int offset = 0;
-				for(int w = 0; w < data.width; w++){
-					results[1][++ offset] = data.R[row][w] - signedVec(data.R, row, w - 1);
-					results[1][++ offset] = data.G[row][w] - signedVec(data.G, row, w - 1);
-					results[1][++ offset] = data.B[row][w] - signedVec(data.B, row, w - 1);
-				}
-				break;
-			}
-			case 2:{
-				results[2][0] = 2;
-				unsigned int offset = 0;
-				for(int w = 0; w < data.width; w++){
-					results[2][++ offset] = data.R[row][w] - signedVec(data.R, row - 1, w);
-					results[2][++ offset] = data.G[row][w] - signedVec(data.G, row - 1, w);
-					results[2][++ offset] = data.B[row][w] - signedVec(data.B, row - 1, w);
-				}
-				break;
-			}
-			case 3:{
-				results[3][0] = 3;
-				unsigned int offset = 0;
-				for(int w = 0; w < data.width; w++){
-					results[3][++ offset] = data.R[row][w] - (signedVec(data.R, row, w - 1) + signedVec(data.R, row - 1, w)) / 2;
-					results[3][++ offset] = data.G[row][w] - (signedVec(data.G, row, w - 1) + signedVec(data.G, row - 1, w)) / 2;
-					results[3][++ offset] = data.B[row][w] - (signedVec(data.B, row, w - 1) + signedVec(data.B, row - 1, w)) / 2;
-				}
-				break;
-			}
-			case 4:{
-				results[4][0] = 4;
-				unsigned int offset = 0;
-				for(int w = 0; w < data.width; w++){
-					results[4][++ offset] = data.R[row][w] - PaethPredictor(signedVec(data.R, row, w - 1), signedVec(data.R, row - 1, w), signedVec(data.R, row - 1, w - 1));
-					results[4][++ offset] = data.G[row][w] - PaethPredictor(signedVec(data.G, row, w - 1), signedVec(data.G, row - 1, w), signedVec(data.G, row - 1, w - 1));
-					results[4][++ offset] = data.B[row][w] - PaethPredictor(signedVec(data.B, row, w - 1), signedVec(data.B, row - 1, w), signedVec(data.B, row - 1, w - 1));
-				}
-				break;
-			}
-		}
+std::vector<unsigned char> chooser(const IMAGE & data, const int h){
+	std::vector<std::vector<unsigned char>> results(5, std::vector<unsigned char>(data.width * 3 + 1));
+	for(int i = 0; i < 5; i++) results[i][0] = i;
+	
+	struct pixels{
+		unsigned char now = 0;
+		unsigned char left = 0;
+		unsigned char up = 0;
+		unsigned char upleft = 0;
+	};
+	pixels R, G, B;
+	std::vector<std::vector<unsigned char>::iterator> offsets = {
+		results[0].begin(),
+		results[1].begin(),
+		results[2].begin(),
+		results[3].begin(),
+		results[4].begin()
+	};
+	for(int w = 0; w < data.width; w++){
+		R.now = data.R[h][w]; R.up = h > 0 ? data.R[h - 1][w] : 0;
+		G.now = data.G[h][w]; G.up = h > 0 ? data.G[h - 1][w] : 0;
+		B.now = data.B[h][w]; B.up = h > 0 ? data.B[h - 1][w] : 0;
+		*++offsets[0] = R.now;
+		*++offsets[0] = G.now;
+		*++offsets[0] = B.now;
+		*++offsets[1] = R.now - R.left;
+		*++offsets[1] = G.now - G.left;
+		*++offsets[1] = B.now - B.left;
+		*++offsets[2] = R.now - R.up;
+		*++offsets[2] = G.now - G.up;
+		*++offsets[2] = B.now - B.up;
+		*++offsets[3] = R.now - (R.left + R.up) / 2;
+		*++offsets[3] = G.now - (G.left + G.up) / 2;
+		*++offsets[3] = B.now - (B.left + B.up) / 2;
+		*++offsets[4] = R.now - PaethPredictor(R.left, R.up, R.upleft);
+		*++offsets[4] = G.now - PaethPredictor(G.left, G.up, G.upleft);
+		*++offsets[4] = B.now - PaethPredictor(B.left, B.up, B.upleft);
+		R.upleft = R.up; R.left = R.now;
+		G.upleft = G.up; G.left = G.now;
+		B.upleft = B.up; B.left = B.now;
 	}
+
 	unsigned long long max_value = 0;
 	unsigned char max_element = 0;
-	for(int i = 0; i < 5; i++){
-		predictedRate[i] = ratePredictor(results[i]);
+	unsigned long long predictedRate[5];
+	for(int Type = 0; Type < 5; Type++){
+		predictedRate[Type] = ratePredictor(results[Type]);
 		// std::cout << i << ": " << predictedRate[i] << ", ";
-		if(predictedRate[i] > max_value){
-			max_value = predictedRate[i];
-			max_element = i;
+		if(predictedRate[Type] > max_value){
+			max_value = predictedRate[Type];
+			max_element = Type;
 		}
 	}
 	return results[max_element];
 }
 
+// フィルター後の datastreamの出力、methodsの更新、(元データ自体の更新)
 std::vector<unsigned char> filterer(PNG & data, bool change){
 	unsigned int streamWidth = data.Width * 3 + 1;
 	std::vector<unsigned char> datastream(streamWidth * data.Height);
