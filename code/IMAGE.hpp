@@ -34,28 +34,6 @@ float image_compare(const IMAGE &image1, const IMAGE &image2){
 	return std::pow(gap / (image1.height * image1.width * 3), 0.5);
 }
 
-void image2imos(IMAGE & image){
-	for(int y = image.height -1; y >= 0; y--){
-		for(int x = image.width -1; x >= 0; x--){
-			image.R[y][x] += (y > 0 && x > 0 ? image.R[y - 1][x - 1] : 0) - (y > 0 ? image.R[y - 1][x] : 0) - (x > 0 ? image.R[y][x - 1] : 0);
-			image.G[y][x] += (y > 0 && x > 0 ? image.G[y - 1][x - 1] : 0) - (y > 0 ? image.G[y - 1][x] : 0) - (x > 0 ? image.G[y][x - 1] : 0);
-			image.B[y][x] += (y > 0 && x > 0 ? image.B[y - 1][x - 1] : 0) - (y > 0 ? image.B[y - 1][x] : 0) - (x > 0 ? image.B[y][x - 1] : 0);
-		}
-	}
-	return;
-}
-
-void imos2image(IMAGE & image){
-	for(int y = 0; y < image.height; y++){
-		for(int x = 0; x < image.width; x++){
-			image.R[y][x] -= (y > 0 && x > 0 ? image.R[y - 1][x - 1] : 0) - (y > 0 ? image.R[y - 1][x] : 0) - (x > 0 ? image.R[y][x - 1] : 0);
-			image.G[y][x] -= (y > 0 && x > 0 ? image.G[y - 1][x - 1] : 0) - (y > 0 ? image.G[y - 1][x] : 0) - (x > 0 ? image.G[y][x - 1] : 0);
-			image.B[y][x] -= (y > 0 && x > 0 ? image.B[y - 1][x - 1] : 0) - (y > 0 ? image.B[y - 1][x] : 0) - (x > 0 ? image.B[y][x - 1] : 0);
-		}
-	}
-	return;
-}
-
 #define NEAREST_NEIGHBOR 0
 
 IMAGE image_enlarge(

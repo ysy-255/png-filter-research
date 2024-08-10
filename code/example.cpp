@@ -23,11 +23,6 @@ int main(){
 
 
 	IMAGE image2 = PNGimage1.ImageData;
-	image2imos(image2);
-	writePNG(image2, "../out/imos.png");
-	imos2image(image2);
-	writePNG(image2, "../out/imos_re.png");
-
 	IMAGE image3 = image_enlarge(image2, 0.4, 0.5, NEAREST_NEIGHBOR);
 	writePNG(image3, "../out/0.4×0.5.png");
 	IMAGE image4 = image_enlarge(image3, 2.5, 2, NEAREST_NEIGHBOR);
