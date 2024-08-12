@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include "PNG.hpp"
+#include "optimalPNG.hpp"
 
 std::vector<std::vector<int>> a;
 
@@ -75,32 +76,32 @@ int predictsum(std::vector<int> & a, std::vector<std::vector<unsigned char>> & c
 	return (i1 + i2 + i3 + i4 + i5 + i6) >> a[7];
 }
 
-void chooseminor(std::vector<long long> & a, std::vector<long long> & b, std::vector<long long> & c, int width){
+void choosebigger(std::vector<long long> & a, std::vector<long long> & b, std::vector<long long> & c, int width){
 	for(int w = 0; w < width; w++){
-		c[w] = std::min(a[w], b[w]);
+		c[w] = std::max(a[w], b[w]);
 	}
 	return;
 }
 
-bool is_minor(std::vector<long long> & a, std::vector<long long> & b, int width){
+bool is_bigger(std::vector<long long> & a, std::vector<long long> & b, int width){
 	long long asum = 0, bsum = 0;
 	for(int w = 0; w < width; w++){
 		asum += a[w];
 		bsum += b[w];
 	}
-	return asum < bsum;
+	return asum > bsum;
 }
 std::vector<int> chooser(std::vector<std::vector<long long>> & vec, int time){
 	int height = vec.size();
 	int width = vec.back().size();
-	std::vector<std::vector<std::vector<long long>>> dp(time + 1, std::vector<std::vector<long long>>(height, std::vector<long long>(width, LONG_LONG_MAX)));
+	std::vector<std::vector<std::vector<long long>>> dp(time + 1, std::vector<std::vector<long long>>(height, std::vector<long long>(width, 0)));
 	std::vector<std::vector<char>> change(time, std::vector<char>(height, 'y'));
 	
 	for(int t = 1; t <= time; t++){
 		for(int h = 0; h < height; h++){
-			chooseminor(dp[t - 1][h], vec[h], dp[t][h], width);
+			choosebigger(dp[t - 1][h], vec[h], dp[t][h], width);
 			if(h > 0){
-				if(is_minor(dp[t][h - 1], dp[t][h], width)){
+				if(is_bigger(dp[t][h - 1], dp[t][h], width)){
 					dp[t][h] = dp[t][h - 1];
 					change[t - 1][h] = 'n';
 				}
@@ -130,7 +131,17 @@ void prepare_a(){
 		for(int _a : a[i]) sum += _a;
 		a[i].push_back(__builtin_ctz(sum));
 		do{
-			a2.push_back(a[i]);
+			if(a[i] != std::vector<int>{0,  0,  0,  0,  0,  0,  0,  0}
+			&& a[i] != std::vector<int>{0,  1,  0,  0,  0,  0,  0,  0}
+			&& a[i] != std::vector<int>{0,  0,  1,  0,  0,  0,  0,  0}
+			&& a[i] != std::vector<int>{0,  1,  1,  0,  0,  0,  0,  1}
+			&& a[i] != std::vector<int>{0,  0,  0,  0,  1,  0,  0,  0}
+			&& a[i] != std::vector<int>{0,  1,  1,  0, -1,  0,  0,  0}
+			&& a[i] != std::vector<int>{0,  2,  1, -1,  0,  0,  0,  1}
+			&& a[i] != std::vector<int>{0,  1,  2, -1,  0,  0,  0,  1})
+			{
+				a2.push_back(a[i]);
+			}
 		}while(std::next_permutation(a[i].begin() + 1, a[i].end() - 1));
 	}
 	return;
@@ -154,7 +165,7 @@ void worker(std::vector<IMAGE> & images, std::string outPath){
 				}
 			}
 			for(int n = 0; n < a2.size(); n++){
-				long long rate = ratePredictor(dif[n]);
+				long long rate = myratePredictor(dif[n]);
 				d[n].push_back(rate);
 			}
 		}
