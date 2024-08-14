@@ -4,7 +4,7 @@
 #include "PNG.hpp"
 
 // 返される値が大きいほうがエントロピーが小さい
-float entropy_rate(std::vector<unsigned char> & vec){
+float tilde_entropy_rate(std::vector<unsigned char> & vec){
 	float H_tilde = 0;
 	unsigned int P[256] = {0};
 	std::vector<unsigned char>::iterator offset = vec.begin();
@@ -16,6 +16,12 @@ float entropy_rate(std::vector<unsigned char> & vec){
 		}
 	}
 	return H_tilde;
+}
+
+// 0 ~ 1 の範囲でエントロピーを返す
+float entropy_rate(std::vector<unsigned char> & vec){
+	int n = vec.size();
+	return (n * std::log2(n) - tilde_entropy_rate(vec)) / n / n;
 }
 
 #endif
