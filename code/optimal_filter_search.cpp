@@ -165,7 +165,7 @@ void worker(std::vector<IMAGE> & images, std::string outPath){
 				}
 			}
 			for(int n = 0; n < a2.size(); n++){
-				long long rate = myratePredictor(dif[n]);
+				long long rate = entropy_rate(dif[n]);
 				d[n].push_back(rate);
 			}
 		}

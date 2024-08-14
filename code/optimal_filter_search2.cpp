@@ -192,13 +192,13 @@ void worker(std::vector<IMAGE> & images, std::string outPath){
 				}
 			}
 			for(int n = 0; n < a_R_size; n++){
-				rate_R[n].push_back(myratePredictor(diff_R[n]));
+				rate_R[n].push_back(entropy_rate(diff_R[n]));
 			}
 			for(int n = 0; n < a_G_size; n++){
-				rate_G[n].push_back(myratePredictor(diff_G[n]));
+				rate_G[n].push_back(entropy_rate(diff_G[n]));
 			}
 			for(int n = 0; n < a_B_size; n++){
-				rate_B[n].push_back(myratePredictor(diff_B[n]));
+				rate_B[n].push_back(entropy_rate(diff_B[n]));
 			}
 		}
 	}

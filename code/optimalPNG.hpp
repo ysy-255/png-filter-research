@@ -3,7 +3,8 @@
 
 #include "PNG.hpp"
 
-float myratePredictor(std::vector<unsigned char> & vec){
+// 返される値が大きいほうがエントロピーが小さい
+float entropy_rate(std::vector<unsigned char> & vec){
 	float H_tilde = 0;
 	unsigned int P[256] = {0};
 	std::vector<unsigned char>::iterator offset = vec.begin();
