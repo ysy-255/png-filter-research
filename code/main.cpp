@@ -1,6 +1,7 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <filesystem>
 
 #include "PNG.hpp"
 #include "optimalPNG.hpp"
@@ -264,23 +265,51 @@ std::vector<unsigned char> myfilterer(PNG & data, bool change){
 }
 
 int main(){
-	PNG image;
-	readPNG("", image); // ここに画像のパス
-	for(int n = 0; n <= 5; n++){
-		UseEntropy_rate = n >= 1;
-		UseJPEGlossless = n >= 2;
-		UseAddFilters = n >= 3;
-		UseGx_diff = n >= 4;
-		UseRGBFilters = n == 5;
-		std::vector<unsigned char> datastream = myfilterer(image, false);
-		std::ofstream out("out_" + std::to_string(n) + ".dat");
-		out.write(reinterpret_cast<char*>(datastream.data()), datastream.size());
-		std::vector<int> counter(255, 0);
-		for(int i = 0; i < image.Height; i++){
-			counter[image.methods[i]] ++;
+	std::ofstream result("result.csv");
+	for(int i = 100; i < 200; i++){
+		PNG image;
+		std::string path = std::to_string(i);
+		while(path.size() < 4)path = '0' + path;
+		path = "../../../../mnt/c/test images/X4/" + path + "x4.png";
+		readPNG(path, image); // ここに画像のパス
+		for(int n = 0; n < 6; n++){
+			UseEntropy_rate = n >= 3;
+			UseJPEGlossless = n % 3 == 1;
+			UseGx_diff = n % 3 == 2;
+			std::vector<unsigned char> datastream = myfilterer(image, false);
+			result << getPNGsize(image.Width, image.Height, datastream) << ',';
+			/*
+			std::ofstream out("out_" + std::to_string(n) + ".dat");
+			out.write(reinterpret_cast<char*>(datastream.data()), datastream.size());
+			std::vector<int> counter(255, 0);
+			for(int i = 0; i < image.Height; i++){
+				counter[image.methods[i]] ++;
+			}
+			for(int i = 0; i < 255; i++) if(counter[i] > 0) std::cout << i << ":" << counter[i] << ", ";
+			std::cout << std::endl;
+			writePNG_datastream(image.Width, image.Height, datastream, "out" + std::to_string(n) + ".png", n > 1);
+			*/
 		}
-		for(int i = 0; i < 255; i++) if(counter[i] > 0) std::cout << i << ":" << counter[i] << ", ";
-		std::cout << std::endl;
-		writePNG_datastream(image.Width, image.Height, datastream, "out" + std::to_string(n) + ".png", n > 1);
+		result << '\n';
+		std::cerr << float(i - 100) / 2  << "% ";
+	}
+	int count = 0;
+	auto directry = std::filesystem::directory_iterator("/mnt/c/test images/screenshot/");
+	for(auto & i : directry){
+		count ++;
+		if(count > 100){
+			PNG image;
+			readPNG(i.path().string(), image);
+			for(int n = 0; n < 6; n++){
+				UseEntropy_rate = n >= 3;
+				UseJPEGlossless = n % 3 == 1;
+				UseGx_diff = n % 3 == 2;
+				std::vector<unsigned char> datastream = myfilterer(image, false);
+				result << getPNGsize(image.Width, image.Height, datastream) << ',';
+			}
+			if(count == 200)break;
+			result << '\n';
+			std::cerr << float(count - 100) / 2 + 50.0 << "% ";
+		}
 	}
 }

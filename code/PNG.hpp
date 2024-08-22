@@ -232,6 +232,39 @@ void readPNG(
 	return;
 }
 
+long long getPNGsize(
+		const unsigned int width,
+		const unsigned int height,
+		std::vector<unsigned char> & datastream
+	){
+	std::vector<unsigned char> compressed_data((width * 3 + 1) * height + 0x1000);
+	z_stream z;
+	z.zalloc = Z_NULL;
+	z.zfree = Z_NULL;
+	z.opaque = Z_NULL;
+	if(deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 /*32768*/, 8, Z_FILTERED) != Z_OK){
+		std::cerr << "z_streamの初期化に失敗" << std::endl;
+		return -1;
+	}
+	z.next_in = datastream.data();
+	z.avail_in = datastream.size();
+	z.next_out = compressed_data.data();
+	z.avail_out = compressed_data.size();
+	int ret;
+	do{
+		ret = deflate(&z, Z_FINISH);
+		if(ret == Z_STREAM_END)break;
+		if(ret != Z_OK){
+			std::cerr << "圧縮処理に失敗" << std::endl;
+			deflateEnd(&z);
+			return -1;
+		}
+	} while(ret != Z_STREAM_END);
+	deflateEnd(&z);
+	long long compressed_size = z.total_out;
+	return compressed_size + 53;
+}
+
 void writePNG_datastream(
 		const unsigned int width,
 		const unsigned int height,
