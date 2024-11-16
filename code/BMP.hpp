@@ -1,123 +1,135 @@
 #ifndef BMP_H
 #define BMP_H
 
+#include <cassert>
 
 #include "./FILE.hpp"
 #include "./IMAGE.hpp"
 
 
-struct BMP{
+class BMP{
+	public:
 	// BITMAPFILEHEADER
-	std::string    bfType;      // must be 'BM' in BITMAPFILEHEADER
-	unsigned int   bfSize;      // size of the file in bytes
-	unsigned short bfReserved1; // must be set to 0
-	unsigned short bfReserved2; // must be set to 0
-	unsigned int   bfOffBits;   // offset from the beginning of the BITMAPFILEHEADER structure to the start of the actual bits
+	std::string bfType = "BM"; // must be 'BM' in BITMAPFILEHEADER
+	uint32_t bfSize;           // size of the file in bytes
+	uint16_t bfReserved1 = 0;  // must be set to 0
+	uint16_t bfReserved2 = 0;  // must be set to 0
+	uint32_t bfOffBits = 54;   // offset from the beginning of the BITMAPFILEHEADER structure to the start of the actual bits
 
 	// BITMAPINFO
-	unsigned int   biSize;         	// size of the header (minus the color table)
-	unsigned int   biWidth;        	// width in pixel
-	unsigned int   biHeight;       	// height in pixel
-	unsigned short biPlanes;       	// should always be 1
-	unsigned short biBitCount;     	// defines the color resolution (in bits per pixel)
-	unsigned int   biCompression;  	// type of compression; BI_RGB(value is 0) format is recommended
-	unsigned int   biSizeImage;    	// should contain the size of the bitmap (not must)
-	unsigned int   biXPelsPerMeter; // the desirable dimensions of the bitmap
-	unsigned int   biYPelsPerMeter; // the desirable dimensions of the bitmap
-	unsigned int   biClrUsed;       // define about the number of colors in the color table
-	unsigned int   biClrImportant;  // first x colors of the color table are important
+	uint32_t biSize = 40; // size of the header (minus the color table)
+	uint32_t biWidth;     // width in pixel
+	uint32_t biHeight;    // height in pixel
+	uint16_t biPlanes = 1;    // should always be 1
+	uint16_t biBitCount = 24; // defines the color resolution (in bits per pixel)
+	uint32_t biCompression = 0;   // type of compression; BI_RGB(value is 0) format is recommended
+	uint32_t biSizeImage = 0;     // should contain the size of the bitmap (not must)
+	uint32_t biXPelsPerMeter = 0; // the desirable dimensions of the bitmap
+	uint32_t biYPelsPerMeter = 0; // the desirable dimensions of the bitmap
+	uint32_t biClrUsed = 0;       // define about the number of colors in the color table
+	uint32_t biClrImportant = 0;  // first x colors of the color table are important
 
 	IMAGE ImageData;
-};
 
-void readBMP(
-		const std::string & ImagePath,
-		BMP & BMPimage
-	){
-	std::ifstream ImageFile(ImagePath, std::ios::binary | std::ios::ate);
-	unsigned int ImageSize = ImageFile.tellg();
-	ImageFile.seekg(0);
-	std::vector<unsigned char> FileData(ImageSize);
-	ImageFile.read(reinterpret_cast<char*>(FileData.data()), ImageSize);
-	BMPimage.bfType += char(FileData[0x00]),
-	BMPimage.bfType += char(FileData[0x01]);
-	if(BMPimage.bfType != "BM"){
-		char c;
-		std::cerr << "unsupported file type: " << BMPimage.bfType << "\nccontinue? [Y/n]";
-		std::cin >> c;
-		if(c != 'Y' && c != 'y') return;
-	}
+	BMP(){};
+	BMP(const uint32_t W, const uint32_t H) : biWidth(W), biHeight(H), ImageData(W, H){}
+	BMP(const IMAGE & img) : biWidth(img.width), biHeight(img.height), ImageData(img){}
+	BMP(const std::string & path) {read(path);}
 
-	BMPimage.bfSize      = UV4_UI(FileData, 0x02, true);
-	BMPimage.bfReserved1 = UV2_US(FileData, 0x06, true);
-	BMPimage.bfReserved2 = UV2_US(FileData, 0x08, true);
-	BMPimage.bfOffBits	 = UV4_UI(FileData, 0x0A, true);
-	
-	BMPimage.biSize	= UV4_UI(FileData, 0x0E, true);
-	if(BMPimage.biSize == 40){
-		BMPimage.biWidth         = UV4_UI(FileData, 0x12, true);
-		BMPimage.biHeight        = UV4_UI(FileData, 0x16, true);
-		BMPimage.biPlanes        = UV2_US(FileData, 0x1A, true); if(BMPimage.biPlanes != 1){std::cerr << "biPlanes is not 1: " << BMPimage.biPlanes << std::endl; return;}
-		BMPimage.biBitCount      = UV2_US(FileData, 0x1C, true); if(BMPimage.biBitCount != 24){std::cerr << "unsupported biBitCount: " << BMPimage.biBitCount << " (bits/pixel)" << std::endl; return;}
-		BMPimage.biCompression   = UV4_UI(FileData, 0x1E, true); if(BMPimage.biCompression != 0){std::cerr << "unsupported biCompression: " << BMPimage.biCompression << std::endl; return;}
-		BMPimage.biSizeImage     = UV4_UI(FileData, 0x22, true); if(BMPimage.biSizeImage == 0)BMPimage.biSizeImage = ((((BMPimage.biWidth * BMPimage.biBitCount) + 31) & ~31) >> 3) * BMPimage.biHeight;
-		BMPimage.biXPelsPerMeter = UV4_UI(FileData, 0x26, true);
-		BMPimage.biYPelsPerMeter = UV4_UI(FileData, 0x2A, true);
-		BMPimage.biClrUsed       = UV4_UI(FileData, 0x2E, true); if(BMPimage.biClrUsed > 0){ std::cerr << "Color Pallete is unsupported" << std::endl; return;}
-		BMPimage.biClrImportant  = UV4_UI(FileData, 0x32, true);
-		BMPimage.ImageData = IMAGE(BMPimage.biHeight, BMPimage.biWidth);
-		unsigned char extend = ((BMPimage.biWidth + 3) & ~3) - BMPimage.biWidth;
-		unsigned int address = BMPimage.bfOffBits;
-		for(int h = BMPimage.biHeight - 1; h >= 0 ; h--){
-			for(int w = 0; w < BMPimage.biWidth; w++){
-				BMPimage.ImageData.B[h][w] = FileData[address ++];
-				BMPimage.ImageData.G[h][w] = FileData[address ++];
-				BMPimage.ImageData.R[h][w] = FileData[address ++];
+	bool read(const std::string & path){
+		BMPstream = filepath2data(path);
+		if(BMPstream.empty()) return true;
+		size_t index = 0, newindex;
+		newindex = index + 2;
+		std::copy(&BMPstream[index], &BMPstream[newindex], bfType.data());
+		index = newindex;
+		assert(bfType == "BM");
+		bfSize      = VU8_U32(BMPstream, index, true);
+		bfReserved1 = VU8_U16(BMPstream, index, true);
+		bfReserved2 = VU8_U16(BMPstream, index, true);
+		bfOffBits	 = VU8_U32(BMPstream, index, true);
+
+		biSize	= VU8_U32(BMPstream, index, true);
+		assert(biSize == 40);
+		biHeight        = VU8_U32(BMPstream, index, true);
+		biWidth         = VU8_U32(BMPstream, index, true);
+		biPlanes        = VU8_U16(BMPstream, index, true); assert(biPlanes == 1);
+		biBitCount      = VU8_U16(BMPstream, index, true); assert(biBitCount == 24); fixed_row_length = ((biWidth * biBitCount + 31) >> 5) << 2;
+		biCompression   = VU8_U32(BMPstream, index, true); assert(biCompression == 0);
+		biSizeImage     = VU8_U32(BMPstream, index, true); if(biSizeImage == 0) biSizeImage = fixed_row_length * biHeight;
+		biXPelsPerMeter = VU8_U32(BMPstream, index, true);
+		biYPelsPerMeter = VU8_U32(BMPstream, index, true);
+		biClrUsed       = VU8_U32(BMPstream, index, true); assert(biClrUsed == 0);
+		biClrImportant  = VU8_U32(BMPstream, index, true);
+
+		uint8_t rest = fixed_row_length - biWidth * 3;
+		assert(rest < 4);
+		ImageData = IMAGE(biWidth, biHeight);
+		index = bfOffBits;
+		for(uint32_t h = biHeight; h > 0; --h){
+			for(uint32_t w = 0; w < biWidth; ++w){
+				ImageData.B[h - 1][w] = BMPstream[index ++];
+				ImageData.G[h - 1][w] = BMPstream[index ++];
+				ImageData.R[h - 1][w] = BMPstream[index ++];
 			}
-			address += extend;
+			index += rest;
 		}
+		return false;
 	}
-	else{
-		std::cerr << "unsupported DIB size: " << BMPimage.biSize << std::endl;
+
+	void write(const std::string & path){
+		fixed_row_length = ((biWidth * biBitCount + 31) >> 5) << 2;
+		bfOffBits = 54; biSize = 40;
+		biSizeImage = fixed_row_length * biHeight;
+		bfSize = bfOffBits + biSizeImage;
+		BMPstream.resize(bfSize);
+
+		size_t index = 0;
+
+		std::copy(bfType.begin(), bfType.end(), &BMPstream[index]);
+		index += 2;
+		U32_write_VU8(bfSize, BMPstream, index, true);
+		U16_write_VU8(bfReserved1, BMPstream, index, true);
+		U16_write_VU8(bfReserved2, BMPstream, index, true);
+		U32_write_VU8(bfOffBits, BMPstream, index, true);
+
+		U32_write_VU8(biSize, BMPstream, index, true);
+		U32_write_VU8(biWidth, BMPstream, index, true);
+		U32_write_VU8(biHeight, BMPstream, index, true);
+		U16_write_VU8(biPlanes, BMPstream, index, true);
+		U16_write_VU8(biBitCount, BMPstream, index, true);
+		U32_write_VU8(biCompression, BMPstream, index, true);
+		U32_write_VU8(biSizeImage, BMPstream, index, true);
+		U32_write_VU8(biXPelsPerMeter, BMPstream, index, true);
+		U32_write_VU8(biYPelsPerMeter, BMPstream, index, true);
+		U32_write_VU8(biClrUsed, BMPstream, index, true);
+		U32_write_VU8(biClrImportant, BMPstream, index, true);
+
+		uint8_t rest = fixed_row_length - biWidth * 3;
+		assert(rest < 4);
+		for(uint32_t h = biHeight; h > 0; --h){
+			for(uint32_t w = 0; w < biWidth; ++w){
+				BMPstream[index ++] = ImageData.B[h - 1][w];
+				BMPstream[index ++] = ImageData.G[h - 1][w];
+				BMPstream[index ++] = ImageData.R[h - 1][w];
+			}
+			for(uint8_t i = 0; i < rest; ++i){
+				BMPstream[index ++] = 0;
+			}
+		}
+
+		assert(index == BMPstream.size() && bfSize == BMPstream.size());
+
+		std::ofstream out(path, std::ios::binary);
+		out.write(reinterpret_cast<char*>(BMPstream.data()), BMPstream.size());
 		return;
 	}
-	return;
-}
 
-void writeBMP(
-		const IMAGE & ImageData,
-		const std::string & outPath
-	){
-	std::ofstream out(outPath, std::ios::binary);
-	unsigned char extend = ((ImageData.width + 3) & ~3) - ImageData.width;
-	out << "BM"; // bfType
-	UI_write((ImageData.width * 3 + extend) * ImageData.height + 54, out, true); //bfSize
-	US_write(0, out, 0); // bfReserved1
-	US_write(0, out, 0); // bfReserved2
-	UI_write(54, out, true); // bfOffBits
-	UI_write(40, out, true); // biSize
-	UI_write(ImageData.width, out, true); // biWidth
-	UI_write(ImageData.height, out, true); // biHeight
-	US_write(1, out, true); // biPlanes
-	US_write(24, out, true); // biBitCount
-	UI_write(0, out, 0); // biCompression
-	UI_write((ImageData.width * 3 + extend) * ImageData.height, out, true); // biSizeImage
-	UI_write(0, out, 0); // biXPelsPerMeter
-	UI_write(0, out, 0); // biYPelsPerMeter
-	UI_write(0, out, 0); // biClrUsed
-	UI_write(0, out, 0); // biClrImportant
-	for(int h = ImageData.height - 1; h >= 0; h--){
-		for(int w = 0; w < ImageData.width; w++){
-			out.put(ImageData.B[h][w]);
-			out.put(ImageData.G[h][w]);
-			out.put(ImageData.R[h][w]);
-		}
-		for(int j = 0; j < extend; j++){
-			out.put(0x00);
-		}
-	}
-	return;
-}
+	private:
 
+	std::vector<uint8_t> BMPstream;
+
+	uint32_t fixed_row_length;
+};
 
 #endif
