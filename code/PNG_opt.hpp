@@ -51,17 +51,17 @@ class PNG_opt : public PNG{
 					filter_methods[h] = i + filter_begin;
 				}
 			}
+			std::vector<uint8_t> & choosed_filtered_array = filtered_array[filter_methods[h] - filter_begin];
 			if(change_raw){
 				size_t index_t = 1;
-				uint8_t * stream = &filtered_array[filter_methods[h]][0];
 				for(uint32_t w = 0; w < Width; ++w){
-					ImageData.R[h][w] = stream[index_t ++];
-					ImageData.G[h][w] = stream[index_t ++];
-					ImageData.B[h][w] = stream[index_t ++];
+					ImageData.R[h][w] = choosed_filtered_array[index_t ++];
+					ImageData.G[h][w] = choosed_filtered_array[index_t ++];
+					ImageData.B[h][w] = choosed_filtered_array[index_t ++];
 				}
 			}
 			if(write_filtered_stream){
-				std::copy(filtered_array[filter_methods[h]].begin(), filtered_array[filter_methods[h]].end(), &filtered_stream[index]);
+				std::copy(choosed_filtered_array.begin(), choosed_filtered_array.end(), &filtered_stream[index]);
 			}
 			index += channel_num * Width + 1;
 		}
