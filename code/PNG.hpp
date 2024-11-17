@@ -13,12 +13,6 @@
 #include "./IMAGE.hpp"
 #include "./FILE.hpp"
 
-#define PNG_FILTER_NONE 0
-#define PNG_FILTER_SUB 1
-#define PNG_FILTER_UP 2
-#define PNG_FILTER_AVERAGE 3
-#define PNG_FILTER_PAETH 4
-
 #define PNG_IHDR_SIZE 13
 #define PNG_IEND_SIZE 0
 
@@ -40,6 +34,10 @@ class PNG{
 	bool has_alpha = false;
 	std::vector<uint8_t> filtered_stream;
 	std::vector<uint8_t> filter_methods;
+
+	std::vector<std::vector<uint8_t>> &R = ImageData.R;
+	std::vector<std::vector<uint8_t>> &G = ImageData.G;
+	std::vector<std::vector<uint8_t>> &B = ImageData.B;
 
 	PNG(){};
 	PNG(const uint32_t W, const uint32_t H) : Width(W), Height(H), ImageData(W, H){}
@@ -118,25 +116,8 @@ class PNG{
 		size_t index = 0;
 		for(uint32_t h = 0; h < Height; ++h){
 			filter_methods[h] = filtered_stream[index ++];
-			switch(filter_methods[h]){
-				case PNG_FILTER_NONE:
-					unfilter_None(h, index);
-					break;
-				case PNG_FILTER_SUB:
-					unfilter_Sub(h, index);
-					break;
-				case PNG_FILTER_UP:
-					unfilter_Up(h, index);
-					break;
-				case PNG_FILTER_AVERAGE:
-					unfilter_Average(h, index);
-					break;
-				case PNG_FILTER_PAETH:
-					unfilter_Paeth(h, index);
-					break;
-				default:
-					assert(false);
-			}
+			assert(filter_methods[h] < 5);
+			(this->*uf_funcs[filter_methods[h]])(h, index);
 		}
 		
 		return;
@@ -188,6 +169,7 @@ class PNG{
 
 		std::ofstream out(path, std::ios::binary);
 		out.write(reinterpret_cast<char*>(PNGstream.data()), PNGstream.size());
+		out.close();
 		return;
 	}
 
@@ -202,7 +184,7 @@ class PNG{
 		for(uint32_t h = 0; h < Height; ++h){
 			uint64_t sum_of_abs_min = UINT64_MAX;
 			for(uint8_t i = 0; i < 5; ++i){
-				if((this->*filter_funcs[i])(h, filtered_array[i])){
+				if((this->*f_funcs[i])(h, filtered_array[i])){
 					continue;
 				}
 				uint64_t sum_of_abs = abs_sum(filtered_array[i]);
@@ -257,153 +239,157 @@ class PNG{
 		return;
 	}
 
-	inline void unfilter_None(const uint32_t h, size_t & index){
+	// unfilter functions
+	void uf_None(const uint32_t h, size_t & index){
 		for(uint32_t w = 0; w < Width; ++w){
-			ImageData.R[h][w] = filtered_stream[index ++];
-			ImageData.G[h][w] = filtered_stream[index ++];
-			ImageData.B[h][w] = filtered_stream[index ++]; if(has_alpha) index ++;
+			R[h][w] = filtered_stream[index ++];
+			G[h][w] = filtered_stream[index ++];
+			B[h][w] = filtered_stream[index ++]; if(has_alpha) index ++;
 		}
 		return;
 	}
-	inline void unfilter_Sub(const uint32_t h, size_t & index){
-		ImageData.R[h][0] = filtered_stream[index ++];
-		ImageData.G[h][0] = filtered_stream[index ++];
-		ImageData.B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
+	void uf_Sub(const uint32_t h, size_t & index){
+		R[h][0] = filtered_stream[index ++];
+		G[h][0] = filtered_stream[index ++];
+		B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
 		for(uint32_t w = 1; w < Width; ++w){
-			ImageData.R[h][w] = filtered_stream[index ++] + ImageData.R[h][w - 1];
-			ImageData.G[h][w] = filtered_stream[index ++] + ImageData.G[h][w - 1];
-			ImageData.B[h][w] = filtered_stream[index ++] + ImageData.B[h][w - 1];  if(has_alpha) index ++;
+			R[h][w] = filtered_stream[index ++] + R[h][w - 1];
+			G[h][w] = filtered_stream[index ++] + G[h][w - 1];
+			B[h][w] = filtered_stream[index ++] + B[h][w - 1];  if(has_alpha) index ++;
 		}
 		return;
 	}
-	inline void unfilter_Up(const uint32_t h, size_t & index){
+	void uf_Up(const uint32_t h, size_t & index){
 		if(h == 0){
 			for(uint32_t w = 0; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++];
-				ImageData.G[h][w] = filtered_stream[index ++];
-				ImageData.B[h][w] = filtered_stream[index ++]; if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++];
+				G[h][w] = filtered_stream[index ++];
+				B[h][w] = filtered_stream[index ++]; if(has_alpha) index ++;
 			}
 		}
 		else{
 			for(uint32_t w = 0; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++] + ImageData.R[h - 1][w];
-				ImageData.G[h][w] = filtered_stream[index ++] + ImageData.G[h - 1][w];
-				ImageData.B[h][w] = filtered_stream[index ++] + ImageData.B[h - 1][w];  if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++] + R[h - 1][w];
+				G[h][w] = filtered_stream[index ++] + G[h - 1][w];
+				B[h][w] = filtered_stream[index ++] + B[h - 1][w];  if(has_alpha) index ++;
 			}
 		}
 		return;
 	}
-	inline void unfilter_Average(const uint32_t h, size_t & index){
+	void uf_Ave(const uint32_t h, size_t & index){
 		if(h == 0){
-			ImageData.R[h][0] = filtered_stream[index ++];
-			ImageData.G[h][0] = filtered_stream[index ++];
-			ImageData.B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
+			R[h][0] = filtered_stream[index ++];
+			G[h][0] = filtered_stream[index ++];
+			B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
 			for(uint32_t w = 1; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++] + ImageData.R[h][w - 1] / 2;
-				ImageData.G[h][w] = filtered_stream[index ++] + ImageData.G[h][w - 1] / 2;
-				ImageData.B[h][w] = filtered_stream[index ++] + ImageData.B[h][w - 1] / 2;  if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++] + R[h][w - 1] / 2;
+				G[h][w] = filtered_stream[index ++] + G[h][w - 1] / 2;
+				B[h][w] = filtered_stream[index ++] + B[h][w - 1] / 2;  if(has_alpha) index ++;
 			}
 		}
 		else{
-			ImageData.R[h][0] = filtered_stream[index ++] + ImageData.R[h - 1][0] / 2;
-			ImageData.G[h][0] = filtered_stream[index ++] + ImageData.G[h - 1][0] / 2;
-			ImageData.B[h][0] = filtered_stream[index ++] + ImageData.B[h - 1][0] / 2; if(has_alpha) index ++;
+			R[h][0] = filtered_stream[index ++] + R[h - 1][0] / 2;
+			G[h][0] = filtered_stream[index ++] + G[h - 1][0] / 2;
+			B[h][0] = filtered_stream[index ++] + B[h - 1][0] / 2; if(has_alpha) index ++;
 			for(uint32_t w = 1; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++] + (ImageData.R[h][w - 1] + ImageData.R[h - 1][w]) / 2;
-				ImageData.G[h][w] = filtered_stream[index ++] + (ImageData.G[h][w - 1] + ImageData.G[h - 1][w]) / 2;
-				ImageData.B[h][w] = filtered_stream[index ++] + (ImageData.B[h][w - 1] + ImageData.B[h - 1][w]) / 2; if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++] + (R[h][w - 1] + R[h - 1][w]) / 2;
+				G[h][w] = filtered_stream[index ++] + (G[h][w - 1] + G[h - 1][w]) / 2;
+				B[h][w] = filtered_stream[index ++] + (B[h][w - 1] + B[h - 1][w]) / 2; if(has_alpha) index ++;
 			}
 		}
 	}
-	inline void unfilter_Paeth(const uint32_t h, size_t & index){
+	void uf_Paeth(const uint32_t h, size_t & index){
 		if(h == 0){
-			ImageData.R[h][0] = filtered_stream[index ++];
-			ImageData.G[h][0] = filtered_stream[index ++];
-			ImageData.B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
+			R[h][0] = filtered_stream[index ++];
+			G[h][0] = filtered_stream[index ++];
+			B[h][0] = filtered_stream[index ++]; if(has_alpha) index ++;
 			for(uint32_t w = 1; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.R[h][w - 1], 0, 0);
-				ImageData.G[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.G[h][w - 1], 0, 0);
-				ImageData.B[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.B[h][w - 1], 0, 0); if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++] + paeth_predictor(R[h][w - 1], 0, 0);
+				G[h][w] = filtered_stream[index ++] + paeth_predictor(G[h][w - 1], 0, 0);
+				B[h][w] = filtered_stream[index ++] + paeth_predictor(B[h][w - 1], 0, 0); if(has_alpha) index ++;
 			}
 		}
 		else{
-			ImageData.R[h][0] = filtered_stream[index ++] + paeth_predictor(0, ImageData.R[h - 1][0], 0);
-			ImageData.G[h][0] = filtered_stream[index ++] + paeth_predictor(0, ImageData.G[h - 1][0], 0);
-			ImageData.B[h][0] = filtered_stream[index ++] + paeth_predictor(0, ImageData.B[h - 1][0], 0); if(has_alpha) index ++;
+			R[h][0] = filtered_stream[index ++] + paeth_predictor(0, R[h - 1][0], 0);
+			G[h][0] = filtered_stream[index ++] + paeth_predictor(0, G[h - 1][0], 0);
+			B[h][0] = filtered_stream[index ++] + paeth_predictor(0, B[h - 1][0], 0); if(has_alpha) index ++;
 			for(uint32_t w = 1; w < Width; ++w){
-				ImageData.R[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.R[h][w - 1], ImageData.R[h - 1][w], ImageData.R[h - 1][w - 1]);
-				ImageData.G[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.G[h][w - 1], ImageData.G[h - 1][w], ImageData.G[h - 1][w - 1]);
-				ImageData.B[h][w] = filtered_stream[index ++] + paeth_predictor(ImageData.B[h][w - 1], ImageData.B[h - 1][w], ImageData.B[h - 1][w - 1]); if(has_alpha) index ++;
+				R[h][w] = filtered_stream[index ++] + paeth_predictor(R[h][w - 1], R[h - 1][w], R[h - 1][w - 1]);
+				G[h][w] = filtered_stream[index ++] + paeth_predictor(G[h][w - 1], G[h - 1][w], G[h - 1][w - 1]);
+				B[h][w] = filtered_stream[index ++] + paeth_predictor(B[h][w - 1], B[h - 1][w], B[h - 1][w - 1]); if(has_alpha) index ++;
 			}
 		}
 	}
 
+	void (PNG::*uf_funcs[5])(const uint32_t h, size_t & index)
+	 = {&PNG::uf_None, &PNG::uf_Sub, &PNG::uf_Up, &PNG::uf_Ave, &PNG::uf_Paeth};
 
-	bool filter_None(const uint32_t h, std::vector<uint8_t> & filtered){
+	// filter functions
+	bool f_None(const uint32_t h, std::vector<uint8_t> & filtered){
 		size_t index = 0;
 		filtered[index ++] = 0;
 		for(uint32_t w = 0; w < Width; ++w){
-			filtered[index ++] = ImageData.R[h][w];
-			filtered[index ++] = ImageData.G[h][w];
-			filtered[index ++] = ImageData.B[h][w];
+			filtered[index ++] = R[h][w];
+			filtered[index ++] = G[h][w];
+			filtered[index ++] = B[h][w];
 		}
 		return false;
 	}
-	bool filter_Sub(const uint32_t h, std::vector<uint8_t> & filtered){
+	bool f_Sub(const uint32_t h, std::vector<uint8_t> & filtered){
 		size_t index = 0;
 		filtered[index ++] = 1;
-		filtered[index ++] = ImageData.R[h][0];
-		filtered[index ++] = ImageData.G[h][0];
-		filtered[index ++] = ImageData.B[h][0];
+		filtered[index ++] = R[h][0];
+		filtered[index ++] = G[h][0];
+		filtered[index ++] = B[h][0];
 		for(uint32_t w = 1; w < Width; ++w){
-			filtered[index ++] = ImageData.R[h][w] - ImageData.R[h][w - 1];
-			filtered[index ++] = ImageData.G[h][w] - ImageData.G[h][w - 1];
-			filtered[index ++] = ImageData.B[h][w] - ImageData.B[h][w - 1];
+			filtered[index ++] = R[h][w] - R[h][w - 1];
+			filtered[index ++] = G[h][w] - G[h][w - 1];
+			filtered[index ++] = B[h][w] - B[h][w - 1];
 		}
 		return false;
 	}
-	bool filter_Up(const uint32_t h, std::vector<uint8_t> & filtered){
+	bool f_Up(const uint32_t h, std::vector<uint8_t> & filtered){
 		if(h == 0) return true;
 		size_t index = 0;
 		filtered[index ++] = 2;
 		for(uint32_t w = 0; w < Width; ++w){
-			filtered[index ++] = ImageData.R[h][w] - ImageData.R[h - 1][w];
-			filtered[index ++] = ImageData.G[h][w] - ImageData.G[h - 1][w];
-			filtered[index ++] = ImageData.B[h][w] - ImageData.B[h - 1][w];
+			filtered[index ++] = R[h][w] - R[h - 1][w];
+			filtered[index ++] = G[h][w] - G[h - 1][w];
+			filtered[index ++] = B[h][w] - B[h - 1][w];
 		}
 		return false;
 	}
-	bool filter_Average(const uint32_t h, std::vector<uint8_t> & filtered){
+	bool f_Ave(const uint32_t h, std::vector<uint8_t> & filtered){
 		if(h == 0) return true;
 		size_t index = 0;
 		filtered[index ++] = 3;
-		filtered[index ++] = ImageData.R[h][0] - (ImageData.R[h - 1][0] >> 1);
-		filtered[index ++] = ImageData.G[h][0] - (ImageData.G[h - 1][0] >> 1);
-		filtered[index ++] = ImageData.B[h][0] - (ImageData.B[h - 1][0] >> 1);
+		filtered[index ++] = R[h][0] - (R[h - 1][0] >> 1);
+		filtered[index ++] = G[h][0] - (G[h - 1][0] >> 1);
+		filtered[index ++] = B[h][0] - (B[h - 1][0] >> 1);
 		for(uint32_t w = 1; w < Width; ++w){
-			filtered[index ++] = ImageData.R[h][w] - ((ImageData.R[h][w - 1] + ImageData.R[h - 1][w]) >> 1);
-			filtered[index ++] = ImageData.G[h][w] - ((ImageData.G[h][w - 1] + ImageData.G[h - 1][w]) >> 1);
-			filtered[index ++] = ImageData.B[h][w] - ((ImageData.B[h][w - 1] + ImageData.B[h - 1][w]) >> 1);
+			filtered[index ++] = R[h][w] - ((R[h][w - 1] + R[h - 1][w]) >> 1);
+			filtered[index ++] = G[h][w] - ((G[h][w - 1] + G[h - 1][w]) >> 1);
+			filtered[index ++] = B[h][w] - ((B[h][w - 1] + B[h - 1][w]) >> 1);
 		}
 		return false;
 	}
-	bool filter_Paeth(const uint32_t h, std::vector<uint8_t> & filtered){
+	bool f_Paeth(const uint32_t h, std::vector<uint8_t> & filtered){
 		if(h == 0) return true;
 		size_t index = 0;
 		filtered[index ++] = 4;
-		filtered[index ++] = ImageData.R[h][0] - paeth_predictor(0, ImageData.R[h - 1][0], 0);
-		filtered[index ++] = ImageData.G[h][0] - paeth_predictor(0, ImageData.G[h - 1][0], 0);
-		filtered[index ++] = ImageData.B[h][0] - paeth_predictor(0, ImageData.B[h - 1][0], 0);
+		filtered[index ++] = R[h][0] - paeth_predictor(0, R[h - 1][0], 0);
+		filtered[index ++] = G[h][0] - paeth_predictor(0, G[h - 1][0], 0);
+		filtered[index ++] = B[h][0] - paeth_predictor(0, B[h - 1][0], 0);
 		for(uint32_t w = 1; w < Width; ++w){
-			filtered[index ++] = ImageData.R[h][w] - paeth_predictor(ImageData.R[h][w - 1], ImageData.R[h - 1][w], ImageData.R[h - 1][w - 1]);
-			filtered[index ++] = ImageData.G[h][w] - paeth_predictor(ImageData.G[h][w - 1], ImageData.G[h - 1][w], ImageData.G[h - 1][w - 1]);
-			filtered[index ++] = ImageData.B[h][w] - paeth_predictor(ImageData.B[h][w - 1], ImageData.B[h - 1][w], ImageData.B[h - 1][w - 1]);
+			filtered[index ++] = R[h][w] - paeth_predictor(R[h][w - 1], R[h - 1][w], R[h - 1][w - 1]);
+			filtered[index ++] = G[h][w] - paeth_predictor(G[h][w - 1], G[h - 1][w], G[h - 1][w - 1]);
+			filtered[index ++] = B[h][w] - paeth_predictor(B[h][w - 1], B[h - 1][w], B[h - 1][w - 1]);
 		}
 		return false;
 	}
 
-	bool (PNG::*filter_funcs[5])(const uint32_t, std::vector<uint8_t> &)
-	 = {&PNG::filter_None, &PNG::filter_Sub, &PNG::filter_Up, &PNG::filter_Average, &PNG::filter_Paeth};
+	bool (PNG::*f_funcs[5])(const uint32_t, std::vector<uint8_t> &)
+	 = {&PNG::f_None, &PNG::f_Sub, &PNG::f_Up, &PNG::f_Ave, &PNG::f_Paeth};
 
 	uint64_t abs_sum(const std::vector<uint8_t> & vec){
 		uint64_t result = 0;

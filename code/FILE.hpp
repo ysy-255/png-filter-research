@@ -24,6 +24,7 @@ inline std::vector<uint8_t> filepath2data(const std::string & path){
 	file_ifstream.seekg(0);
 	std::vector<uint8_t> result(file_size);
 	file_ifstream.read(reinterpret_cast<char*>(result.data()), file_size);
+	file_ifstream.close();
 	return result;
 }
 

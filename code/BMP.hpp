@@ -122,6 +122,7 @@ class BMP{
 
 		std::ofstream out(path, std::ios::binary);
 		out.write(reinterpret_cast<char*>(BMPstream.data()), BMPstream.size());
+		out.close();
 		return;
 	}
 
