@@ -10,6 +10,11 @@ inline std::valarray<T> vector2valarray(const std::vector<T> & vec){
 	return std::valarray<T>(vec.data(), vec.size());
 }
 
+template<typename T>
+inline T valarray_ave(const std::valarray<T> & arr){
+	return arr.sum() / arr.size();
+}
+
 std::vector<double> filesizes_normal;
 std::vector<double> filesizes_entropy;
 
@@ -89,22 +94,31 @@ int main(){
 
 
 		std::ofstream csv_filesizes("../csv/filesizes/" + std::to_string(cnt) + ".csv");
-		auto filesizes_entropy_arr = vector2valarray(filesizes_entropy);
-		auto filesizes_normal_arr = vector2valarray(filesizes_normal);
-		auto filesizes_ratio_entropy = filesizes_entropy_arr / filesizes_normal_arr;
+		csv_filesizes << std::fixed << std::setprecision(4);
+		std::valarray<double> filesizes_entropy_arr = vector2valarray(filesizes_entropy);
+		std::valarray<double> filesizes_normal_arr = vector2valarray(filesizes_normal);
+		std::valarray<double> filesizes_ratio_entropy = filesizes_entropy_arr / filesizes_normal_arr;
 		for(uint32_t i = 0; i < filesizes_normal.size(); ++i){
 			csv_filesizes
 			 << uint32_t(filesizes_normal[i]) << ','
 			 << uint32_t(filesizes_entropy[i]) << ','
-			 << std::fixed << std::setprecision(4) << filesizes_ratio_entropy[i] << '\n';
+			 << filesizes_ratio_entropy[i] << '\n';
 		}
 		csv_filesizes.close();
 
 		std::ofstream result_filesizes("../result/filesizes/" + std::to_string(cnt) + ".txt");
-		result_filesizes
-		 << "\nentropy / normal\n"
+		result_filesizes << std::fixed << std::setprecision(4)
+		 << "\n-- entropy / normal --\n"
 		 << "総圧縮率　: " << filesizes_entropy_arr.sum() / filesizes_normal_arr.sum() << '\n'
-		 << "平均圧縮率: " << filesizes_ratio_entropy.sum() / filesizes_ratio_entropy.size() << '\n';
+		 << "最良圧縮率: " << filesizes_ratio_entropy.min() << '\n'
+		 << "平均圧縮率: " << valarray_ave(filesizes_ratio_entropy) << '\n'
+		 << "最悪圧縮率: " << filesizes_ratio_entropy.max()
+		 << "\n- - - - - - - - - - - \n"
+		 << "max: " << uint32_t(filesizes_entropy_arr.max()) << " / " << uint32_t(filesizes_normal_arr.max()) << '\n'
+		 << "ave: " << uint32_t(valarray_ave(filesizes_entropy_arr)) << " / " << uint32_t(valarray_ave(filesizes_normal_arr)) << '\n'
+		 << "min: " << uint32_t(filesizes_entropy_arr.min()) << " / " << uint32_t(filesizes_normal_arr.min()) << '\n'
+		 << "all: " << uint64_t(filesizes_entropy_arr.sum()) << " / " << uint64_t(filesizes_normal_arr.sum())
+		 << "\n----------------------\n";
 		result_filesizes.close();
 
 		freq_out(freq_table_RG_entropy, "RG", "entropy", cnt);
