@@ -1,4 +1,5 @@
 #include <valarray>
+#include <utility>
 
 #include "PNG_opt.hpp"
 #include "BMP.hpp"
@@ -27,6 +28,51 @@ void filesize_entropy(PNG_opt & png){
 	png.filterer_opt();
 	filesizes_entropy.push_back(png.getFileSize());
 }
+
+void filesize_out(const std::vector<std::pair<std::string, std::vector<double>&>> data, const int cnt){
+	int data_size = data.size();
+	std::vector<std::valarray<double>> filesizes_arr;
+	std::vector<std::valarray<double>> filesizes_ratio;
+	for(int i = 0; i < data_size; ++i){
+		filesizes_arr.push_back(vector2valarray(data[i].second));
+		filesizes_ratio.push_back(filesizes_arr.back() / filesizes_arr.front());
+	}
+
+	std::ofstream csv_filesizes("../csv/filesizes/" + std::to_string(cnt) + ".csv");
+	csv_filesizes << std::fixed << std::setprecision(4);
+	for(uint32_t i = 0; i < data.front().second.size(); ++i){
+		csv_filesizes << uint32_t(filesizes_arr[0][i]);
+		for(int j = 1; j < data_size; ++j){
+			csv_filesizes
+			 << ',' << uint32_t(filesizes_arr[j][i])
+			 << ',' << filesizes_ratio[j][i];
+		}
+		csv_filesizes << '\n';
+	}
+	csv_filesizes.close();
+
+	std::ofstream result_filesizes("../result/filesizes/" + std::to_string(cnt) + ".txt");
+	result_filesizes << std::fixed << std::setprecision(4);
+	for(int i = 1; i < data_size; ++i){
+		std::string line(data[i].first.length() + data[0].first.length() + 9, '-'), line2 = line;
+		for(int i = 1; i < int(line2.size()); i += 2) line2[i] = ' ';
+		result_filesizes
+		 << "\n-- " << data[i].first << " / " << data[0].first << " --\n"
+		 << "総圧縮率　: " << filesizes_arr[i].sum() / filesizes_arr[0].sum() << '\n'
+		 << "最良圧縮率: " << filesizes_ratio[i].min() << '\n'
+		 << "平均圧縮率: " << valarray_ave(filesizes_ratio[i]) << '\n'
+		 << "最悪圧縮率: " << filesizes_ratio[i].max() << '\n'
+		 << line2 << '\n'
+		 << "max: " << uint32_t(filesizes_arr[i].max()) << " / " << uint32_t(filesizes_arr[0].max()) << '\n'
+		 << "ave: " << uint32_t(valarray_ave(filesizes_arr[i])) << " / " << uint32_t(valarray_ave(filesizes_arr[0])) << '\n'
+		 << "min: " << uint32_t(filesizes_arr[i].min()) << " / " << uint32_t(filesizes_arr[0].min()) << '\n'
+		 << "all: " << uint64_t(filesizes_arr[i].sum()) << " / " << uint64_t(filesizes_arr[0].sum()) << '\n'
+		 << line << '\n';
+	}
+	result_filesizes.close();
+	return;
+}
+
 
 std::array<std::array<uint32_t, 256>, 256> freq_table_RG_entropy;
 std::array<std::array<uint32_t, 256>, 256> freq_table_RB_entropy;
@@ -92,34 +138,10 @@ int main(){
 
 		dataset_allPNG(funcs, 3, dataset);
 
-
-		std::ofstream csv_filesizes("../csv/filesizes/" + std::to_string(cnt) + ".csv");
-		csv_filesizes << std::fixed << std::setprecision(4);
-		std::valarray<double> filesizes_entropy_arr = vector2valarray(filesizes_entropy);
-		std::valarray<double> filesizes_normal_arr = vector2valarray(filesizes_normal);
-		std::valarray<double> filesizes_ratio_entropy = filesizes_entropy_arr / filesizes_normal_arr;
-		for(uint32_t i = 0; i < filesizes_normal.size(); ++i){
-			csv_filesizes
-			 << uint32_t(filesizes_normal[i]) << ','
-			 << uint32_t(filesizes_entropy[i]) << ','
-			 << filesizes_ratio_entropy[i] << '\n';
-		}
-		csv_filesizes.close();
-
-		std::ofstream result_filesizes("../result/filesizes/" + std::to_string(cnt) + ".txt");
-		result_filesizes << std::fixed << std::setprecision(4)
-		 << "\n-- entropy / normal --\n"
-		 << "総圧縮率　: " << filesizes_entropy_arr.sum() / filesizes_normal_arr.sum() << '\n'
-		 << "最良圧縮率: " << filesizes_ratio_entropy.min() << '\n'
-		 << "平均圧縮率: " << valarray_ave(filesizes_ratio_entropy) << '\n'
-		 << "最悪圧縮率: " << filesizes_ratio_entropy.max()
-		 << "\n- - - - - - - - - - - \n"
-		 << "max: " << uint32_t(filesizes_entropy_arr.max()) << " / " << uint32_t(filesizes_normal_arr.max()) << '\n'
-		 << "ave: " << uint32_t(valarray_ave(filesizes_entropy_arr)) << " / " << uint32_t(valarray_ave(filesizes_normal_arr)) << '\n'
-		 << "min: " << uint32_t(filesizes_entropy_arr.min()) << " / " << uint32_t(filesizes_normal_arr.min()) << '\n'
-		 << "all: " << uint64_t(filesizes_entropy_arr.sum()) << " / " << uint64_t(filesizes_normal_arr.sum())
-		 << "\n----------------------\n";
-		result_filesizes.close();
+		filesize_out({
+			{"normal", filesizes_normal},
+			{"entropy", filesizes_entropy}
+		}, cnt);
 
 		freq_out(freq_table_RG_entropy, "RG", "entropy", cnt);
 		freq_out(freq_table_RB_entropy, "RB", "entropy", cnt);
